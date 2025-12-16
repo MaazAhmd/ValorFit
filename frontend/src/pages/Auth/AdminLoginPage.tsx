@@ -26,11 +26,6 @@ export default function AdminLoginPage() {
         }
     };
 
-    const fillTestAccount = () => {
-        setEmail("admin@tshirt.com");
-        setPassword("admin123");
-    };
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
             <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl">
@@ -58,7 +53,7 @@ export default function AdminLoginPage() {
                                 onChange={e => setEmail(e.target.value)}
                                 className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white text-sm
                            placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                placeholder="admin@tshirt.com"
+                                placeholder="admin@example.com"
                             />
                         </div>
 
@@ -91,20 +86,6 @@ export default function AdminLoginPage() {
                             {loading ? "Authenticating..." : "Access Admin Panel"}
                         </button>
                     </form>
-
-                    {/* Test credentials helper */}
-                    <div className="text-center space-y-2">
-                        <p className="text-xs text-white/40">
-                            Test credentials: <span className="text-white/60">admin@tshirt.com / admin123</span>
-                        </p>
-                        <button
-                            type="button"
-                            onClick={fillTestAccount}
-                            className="text-xs text-orange-400 hover:text-orange-300 underline"
-                        >
-                            Use test account
-                        </button>
-                    </div>
 
                     {/* Back to store link */}
                     <div className="text-center">

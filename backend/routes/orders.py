@@ -37,15 +37,35 @@ def create_order():
     items = data.get('items', [])
     if not items:
         return jsonify({'message': 'Order must contain items'}), 400
+        
+    # Check inventory and deduct stock
+    from models import Product # Ensure Product is imported
     
+    total_amount = 0
+    for item in items:
+        product_id = item.get('productId') or item.get('id')
+        quantity = item.get('quantity', 1)
+        
+        product = Product.query.get(product_id)
+        if not product:
+            return jsonify({'message': f'Product {product_id} not found'}), 404
+            
+        if product.quantity < quantity:
+            return jsonify({'message': f'Insufficient stock for {product.name}. Available: {product.quantity}'}), 400
+            
+        product.quantity -= quantity
+        total_amount += product.price * quantity
+
     order = Order(
         user_id=user_id,
         items=json.dumps(items),
-        total=data.get('total', 0),
+        total=data.get('total', total_amount),
         shipping_address=data.get('shippingAddress', ''),
         customer_name=data.get('customerName', user.name),
         customer_email=data.get('customerEmail', user.email),
-        status='pending'
+        status='pending',
+        payment_method=data.get('paymentMethod', 'cod'),
+        payment_status='pending'
     )
     
     db.session.add(order)

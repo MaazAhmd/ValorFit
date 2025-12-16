@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [role, setRole] = useState<"customer" | "designer">("customer");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,21 +19,44 @@ export default function RegisterPage() {
     if (!name || !email || !password)
       return setError("Please complete all fields.");
 
+    if (password.length < 6) {
+      return setError("Password must be at least 6 characters.");
+    }
+
     try {
       setLoading(true);
       await register(name, email, password, role);
-      // Navigate based on role
-      if (role === "designer") {
-        navigate("/designer");
-      } else {
-        navigate("/");
-      }
+      setSuccess(true);
+      // Show success message, then navigate
+      setTimeout(() => {
+        if (role === "designer") {
+          navigate("/designer");
+        } else {
+          navigate("/");
+        }
+      }, 1500);
     } catch (err: any) {
       setError(err?.message || "Registration failed.");
     } finally {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Account Created!</h2>
+          <p className="text-gray-600">Redirecting you to the app...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -83,6 +107,7 @@ export default function RegisterPage() {
                 className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm shadow-sm
                            focus:outline-none focus:ring-2 focus:ring-black/80"
               />
+              <p className="text-xs text-gray-500">Must be at least 6 characters</p>
             </div>
 
             {/* Role */}
@@ -114,7 +139,11 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-2">
               <button
@@ -123,7 +152,7 @@ export default function RegisterPage() {
                 className="flex-1 rounded-xl bg-black py-2.5 text-sm font-semibold text-white
                            shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60"
               >
-                {loading ? "Creating…" : "Create account"}
+                {loading ? "Creating account…" : "Create account"}
               </button>
 
               <Link

@@ -7,7 +7,6 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"customer" | "designer">("customer");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,29 +17,12 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      await login(email, password, role);
-      // Navigate based on role
-      if (role === "designer") {
-        navigate("/designer");
-      } else {
-        navigate("/");
-      }
+      await login(email, password);
+      navigate("/");
     } catch (err: any) {
       setError(err?.message || "Login failed.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fillTestAccount = (type: "customer" | "designer") => {
-    if (type === "designer") {
-      setEmail("alex@designer.com");
-      setPassword("designer123");
-      setRole("designer");
-    } else {
-      setEmail("john@customer.com");
-      setPassword("customer123");
-      setRole("customer");
     }
   };
 
@@ -66,6 +48,7 @@ export default function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm shadow-sm
                            focus:outline-none focus:ring-2 focus:ring-black/80"
+                placeholder="your@email.com"
               />
             </div>
 
@@ -78,31 +61,15 @@ export default function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm shadow-sm
                            focus:outline-none focus:ring-2 focus:ring-black/80"
+                placeholder="••••••••"
               />
             </div>
 
-            {/* Role Selector */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">I am a:</label>
-              <div className="flex gap-2">
-                {(["customer", "designer"] as const).map(r => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all
-                      ${role === r
-                        ? "bg-black text-white shadow-md"
-                        : "border border-black/20 hover:bg-black hover:text-white"
-                      }`}
-                  >
-                    {r.charAt(0).toUpperCase() + r.slice(1)}
-                  </button>
-                ))}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
-            </div>
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            )}
 
             {/* Actions */}
             <div className="flex gap-3 pt-2">
@@ -124,27 +91,6 @@ export default function LoginPage() {
               </Link>
             </div>
           </form>
-
-          {/* Test accounts helper */}
-          <div className="space-y-2 pt-4 border-t border-gray-100">
-            <p className="text-xs text-black/40 text-center">Test accounts:</p>
-            <div className="flex gap-2 justify-center">
-              <button
-                type="button"
-                onClick={() => fillTestAccount("customer")}
-                className="text-xs px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
-              >
-                Customer
-              </button>
-              <button
-                type="button"
-                onClick={() => fillTestAccount("designer")}
-                className="text-xs px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 transition"
-              >
-                Designer
-              </button>
-            </div>
-          </div>
 
           {/* Back to home */}
           <div className="text-center">

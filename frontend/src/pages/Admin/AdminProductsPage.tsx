@@ -1,89 +1,335 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getProducts, createProduct, deleteProduct, Product } from "@/services/productService";
-import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from 'react';
+import { Plus, Pencil, Trash2, Package } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import apiService from '@/services/apiService';
+import { useToast } from '@/hooks/use-toast';
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  category: string;
+  description: string;
+  image: string;
+  sizes: string[];
+  isFeatured: boolean;
+  isNew: boolean;
+  isActive: boolean;
+}
 
 export default function AdminProductsPage() {
-  const { user, isLoggedIn } = useAuth();
-  const navigate = useNavigate();
-  const [items, setItems] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ title: "", price: "", image_url: "", description: "" });
-  const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    if (!isLoggedIn) {
-      navigate("/auth?mode=login");
-      return;
-    }
-    if (user?.role !== "admin") {
-      navigate("/");
-      return;
-    }
-    load();
-  }, [isLoggedIn, user, navigate]);
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    quantity: '',
+    category: 'normal',
+    description: '',
+    image: '',
+    is_featured: false,
+    is_new: false,
+  });
 
-  async function load() {
-    setLoading(true);
+  const fetchProducts = async () => {
     try {
-      const data = await getProducts();
-      setItems(data);
-    } catch (e: any) {
-      setError(e?.message || "Failed to load");
+      setLoading(true);
+      const response = await apiService.getAllProducts();
+      setProducts(response.products as Product[]);
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function handleCreate(e: React.FormEvent) {
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      price: '',
+      quantity: '',
+      category: 'normal',
+      description: '',
+      image: '',
+      is_featured: false,
+      is_new: false,
+    });
+    setEditingProduct(null);
+  };
+
+  const openEditDialog = (product: Product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      price: String(product.price),
+      quantity: String(product.quantity),
+      category: product.category,
+      description: product.description || '',
+      image: product.image,
+      is_featured: product.isFeatured,
+      is_new: product.isNew,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    try {
-      await createProduct({
-        title: form.title,
-        price: Number(form.price),
-        image_url: form.image_url,
-        description: form.description,
-      });
-      setForm({ title: "", price: "", image_url: "", description: "" });
-      load();
-    } catch (e: any) {
-      setError(e?.message || "Failed to create");
-    }
-  }
 
-  async function handleDelete(id: string) {
     try {
-      await deleteProduct(id);
-      setItems((prev) => prev.filter((p) => p.id !== id));
-    } catch (e: any) {
-      setError(e?.message || "Failed to delete");
-    }
-  }
+      const productData = {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        quantity: parseInt(formData.quantity),
+        category: formData.category,
+        description: formData.description,
+        image: formData.image,
+        is_featured: formData.is_featured,
+        is_new: formData.is_new,
+      };
 
-  if (!isLoggedIn || user?.role !== "admin") return null;
+      if (editingProduct) {
+        await apiService.updateProduct(parseInt(editingProduct.id), productData);
+        toast({ title: 'Success', description: 'Product updated successfully' });
+      } else {
+        await apiService.createProduct(productData);
+        toast({ title: 'Success', description: 'Product created successfully' });
+      }
+
+      setDialogOpen(false);
+      resetForm();
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+
+    try {
+      await apiService.deleteProduct(parseInt(id));
+      toast({ title: 'Success', description: 'Product deleted' });
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold mb-6">Admin · Products</h1>
-      <form onSubmit={handleCreate} className="grid md:grid-cols-4 gap-3 mb-6">
-        <input className="border px-3 py-2 rounded" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-        <input className="border px-3 py-2 rounded" placeholder="Price" type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
-        <input className="border px-3 py-2 rounded" placeholder="Image URL" value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} />
-        <input className="border px-3 py-2 rounded" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <button type="submit" className="md:col-span-4 bg-black text-white py-2 rounded">Add Product</button>
-      </form>
-      {error && <p className="text-red-600 mb-3 text-sm">{error}</p>}
-      {loading ? <p>Loading…</p> : (
-        <div className="grid md:grid-cols-3 gap-4">
-          {items.map((p) => (
-            <div key={p.id} className="border rounded p-4">
-              {p.image_url && <img src={p.image_url} alt={p.title} className="h-40 w-full object-cover mb-3" />}
-              <h3 className="font-semibold">{p.title}</h3>
-              <p className="text-sm text-gray-600">${Number(p.price).toFixed(2)}</p>
-              <button onClick={() => handleDelete(p.id)} className="mt-3 text-sm text-red-600">Delete</button>
-            </div>
-          ))}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Products</h1>
+          <p className="text-muted-foreground">Manage your product inventory</p>
+        </div>
+        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Product Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Premium Cotton Tee"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="49.00"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantity</Label>
+                  <Input
+                    type="number"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    placeholder="100"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="designer">Designer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Product description..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Image URL</Label>
+                <Input
+                  value={formData.image}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  placeholder="https://images.unsplash.com/..."
+                  required
+                />
+                {formData.image && (
+                  <img src={formData.image} alt="Preview" className="w-24 h-24 object-cover rounded-lg" />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={formData.is_featured}
+                    onCheckedChange={(v) => setFormData({ ...formData, is_featured: v })}
+                  />
+                  <Label>Featured</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={formData.is_new}
+                    onCheckedChange={(v) => setFormData({ ...formData, is_new: v })}
+                  />
+                  <Label>New Arrival</Label>
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full">
+                {editingProduct ? 'Update Product' : 'Create Product'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Products Table */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : products.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>No products yet. Add your first product!</p>
+        </div>
+      ) : (
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left p-4 font-medium">Product</th>
+                  <th className="text-left p-4 font-medium">Category</th>
+                  <th className="text-left p-4 font-medium">Price</th>
+                  <th className="text-left p-4 font-medium">Quantity</th>
+                  <th className="text-left p-4 font-medium">Status</th>
+                  <th className="text-right p-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product.id} className="border-b border-border last:border-0 hover:bg-muted/30">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded-lg" />
+                        <div>
+                          <p className="font-medium">{product.name}</p>
+                          <div className="flex gap-1 mt-1">
+                            {product.isFeatured && (
+                              <span className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">Featured</span>
+                            )}
+                            {product.isNew && (
+                              <span className="text-xs bg-green-500/20 text-green-500 px-2 py-0.5 rounded">New</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 capitalize">{product.category}</td>
+                    <td className="p-4">${product.price.toFixed(2)}</td>
+                    <td className="p-4">
+                      <span className={product.quantity <= 5 ? 'text-red-500 font-medium' : ''}>
+                        {product.quantity}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      {product.quantity > 0 ? (
+                        <span className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded">In Stock</span>
+                      ) : (
+                        <span className="text-xs bg-red-500/20 text-red-500 px-2 py-1 rounded">Out of Stock</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(product.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

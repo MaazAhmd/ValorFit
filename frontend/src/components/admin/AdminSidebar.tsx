@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Palette, Users, LogOut, Menu } from 'lucide-react';
+import { LayoutDashboard, Package, Palette, Users, LogOut, Menu, ShoppingBag } from 'lucide-react';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
+  { title: 'Products', url: '/admin/products', icon: ShoppingBag },
   { title: 'Orders', url: '/admin/orders', icon: Package },
   { title: 'Designs', url: '/admin/designs', icon: Palette },
   { title: 'Designers', url: '/admin/designers', icon: Users },
@@ -19,12 +20,12 @@ export function AdminSidebar() {
     <>
       {/* Mobile overlay */}
       {!collapsed && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setCollapsed(true)}
         />
       )}
-      
+
       {/* Sidebar */}
       <aside className={cn(
         "fixed lg:sticky top-0 left-0 z-50 h-screen bg-card border-r border-border transition-all duration-300",
@@ -36,8 +37,8 @@ export function AdminSidebar() {
             {!collapsed && (
               <span className="font-display text-xl text-primary">ADMIN</span>
             )}
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               onClick={() => setCollapsed(!collapsed)}
               className="hidden lg:flex"
@@ -56,8 +57,8 @@ export function AdminSidebar() {
                   to={item.url}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
-                    isActive 
-                      ? "bg-primary text-primary-foreground" 
+                    isActive
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >

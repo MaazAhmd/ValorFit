@@ -56,7 +56,8 @@ def create_product():
         designer_id=data.get('designerId'),
         designer_name=data.get('designerName'),
         is_featured=data.get('isFeatured', False),
-        is_new=data.get('isNew', False)
+        is_new=data.get('isNew', False),
+        quantity=data.get('quantity', 0)
     )
     
     if data.get('sizes'):

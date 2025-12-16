@@ -14,10 +14,7 @@ import AboutPage from "./pages/AboutPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
-import AuthPage from "./pages/Auth/AuthPage";
 import NotFound from "./pages/NotFound";
-import AdminProductsPage from "./pages/Admin/AdminProductsPage";
-import DesignerProductsPage from "./pages/Designer/DesignerProductsPage";
 
 // Auth pages
 import LoginPage from "./pages/Auth/LoginPage";
@@ -30,6 +27,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminDesigns from "./pages/admin/AdminDesigns";
 import AdminDesigners from "./pages/admin/AdminDesigners";
+import AdminProductsPage from "./pages/admin/AdminProductsPage";
 
 // Designer imports
 import { DesignerLayout } from "./components/designer/DesignerLayout";
@@ -123,6 +121,7 @@ const AppRoutes = () => (
       </ProtectedRoute>
     }>
       <Route index element={<AdminDashboard />} />
+      <Route path="products" element={<AdminProductsPage />} />
       <Route path="orders" element={<AdminOrders />} />
       <Route path="designs" element={<AdminDesigns />} />
       <Route path="designers" element={<AdminDesigners />} />

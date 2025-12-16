@@ -1,164 +1,167 @@
-const API_BASE_URL = '/api';
+import { toast } from '@/hooks/use-toast';
 
-interface RequestOptions {
-  method?: string;
-  body?: any;
-  headers?: Record<string, string>;
-}
+const API_URL = '/api';
+
+const getHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+const handleResponse = async (response: Response) => {
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Something went wrong');
+  }
+  return data;
+};
 
 class ApiService {
-  private getToken(): string | null {
-    return localStorage.getItem('auth_token');
-  }
-
-  private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const token = this.getToken();
-    
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: options.method || 'GET',
-      headers,
-      body: options.body ? JSON.stringify(options.body) : undefined,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Request failed');
-    }
-
-    return data;
-  }
-
-  // Auth endpoints
-  async login(email: string, password: string, role: 'customer' | 'designer') {
-    return this.request<{ token: string; user: any }>('/auth/login', {
+  // Auth
+  async login(email: string, password: string) {
+    const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
-      body: { email, password, role },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
+    return handleResponse(response);
   }
 
   async adminLogin(email: string, password: string) {
-    return this.request<{ token: string; user: any }>('/auth/admin/login', {
+    const response = await fetch(`${API_URL}/auth/admin/login`, {
       method: 'POST',
-      body: { email, password },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
+    return handleResponse(response);
   }
 
-  async register(name: string, email: string, password: string, role: 'customer' | 'designer') {
-    return this.request<{ token: string; user: any }>('/auth/register', {
+  async register(name: string, email: string, password: string, role: string = 'customer') {
+    const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
-      body: { name, email, password, role },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, role }),
     });
+    return handleResponse(response);
   }
 
-  async getMe() {
-    return this.request<{ user: any }>('/auth/me');
+  async getCurrentUser() {
+    const response = await fetch(`${API_URL}/auth/me`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
   }
 
-  async logout() {
-    return this.request('/auth/logout', { method: 'POST' });
-  }
-
-  // Products endpoints
+  // Products
   async getProducts(category?: string) {
-    const query = category ? `?category=${category}` : '';
-    return this.request<{ products: any[] }>(`/products${query}`);
+    let url = `${API_URL}/products`;
+    if (category) {
+      url += `?category=${category}`;
+    }
+    const response = await fetch(url);
+    return handleResponse(response);
   }
 
   async getProduct(id: string) {
-    return this.request<{ product: any }>(`/products/${id}`);
+    const response = await fetch(`${API_URL}/products/${id}`);
+    return handleResponse(response);
   }
 
-  async getFeaturedProducts() {
-    return this.request<{ products: any[] }>('/products/featured');
-  }
-
-  async getNewArrivals() {
-    return this.request<{ products: any[] }>('/products/new');
-  }
-
-  // Orders endpoints
-  async createOrder(orderData: {
-    items: any[];
-    total: number;
-    shippingAddress: string;
-    customerName: string;
-    customerEmail: string;
-  }) {
-    return this.request<{ order: any }>('/orders', {
+  async createProduct(productData: any) {
+    const response = await fetch(`${API_URL}/products`, {
       method: 'POST',
-      body: orderData,
+      headers: getHeaders(),
+      body: JSON.stringify(productData),
     });
+    return handleResponse(response);
+  }
+
+  async updateProduct(id: number, productData: any) {
+    const response = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(productData),
+    });
+    return handleResponse(response);
+  }
+
+  async deleteProduct(id: number) {
+    const response = await fetch(`${API_URL}/products/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  }
+
+  async getAllProducts() {
+    // Admin endpoint usually, or just regular getProducts
+    const response = await fetch(`${API_URL}/products`);
+    return handleResponse(response);
+  }
+
+  // Orders
+  async createOrder(orderData: any) {
+    const response = await fetch(`${API_URL}/orders`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(orderData),
+    });
+    return handleResponse(response);
   }
 
   async getOrders() {
-    return this.request<{ orders: any[] }>('/orders');
+    const response = await fetch(`${API_URL}/orders/my-orders`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  }
+
+  async getAllOrders() { // Admin
+    const response = await fetch(`${API_URL}/admin/orders`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
   }
 
   async updateOrderStatus(orderId: number, status: string) {
-    return this.request<{ order: any }>(`/orders/${orderId}/status`, {
+    const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
       method: 'PUT',
-      body: { status },
+      headers: getHeaders(),
+      body: JSON.stringify({ status }),
     });
+    return handleResponse(response);
   }
 
-  // Designs endpoints
+  // Designs
   async getDesigns() {
-    return this.request<{ designs: any[] }>('/designs');
+    const response = await fetch(`${API_URL}/designs`);
+    return handleResponse(response);
   }
 
-  async createDesign(designData: { name: string; image: string; category?: string }) {
-    return this.request<{ design: any }>('/designs', {
+  async createDesign(designData: any) {
+    const response = await fetch(`${API_URL}/designs`, {
       method: 'POST',
-      body: designData,
+      headers: getHeaders(),
+      body: JSON.stringify(designData),
     });
+    return handleResponse(response);
   }
 
-  async approveDesign(designId: number) {
-    return this.request<{ design: any }>(`/designs/${designId}/approve`, {
-      method: 'PUT',
-    });
-  }
-
-  async rejectDesign(designId: number, reason?: string) {
-    return this.request<{ design: any }>(`/designs/${designId}/reject`, {
-      method: 'PUT',
-      body: { reason },
-    });
-  }
-
-  // Admin endpoints
+  // Admin Stats
   async getAdminStats() {
-    return this.request<{ stats: any }>('/admin/stats');
+    const response = await fetch(`${API_URL}/admin/stats`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
   }
 
   async getDesigners() {
-    return this.request<{ designers: any[] }>('/admin/designers');
-  }
-
-  // Designer endpoints
-  async getDesignerStats() {
-    return this.request<{ stats: any }>('/designer/stats');
-  }
-
-  async getTransactions() {
-    return this.request<{ transactions: any[] }>('/designer/transactions');
-  }
-
-  async requestWithdrawal(amount: number) {
-    return this.request<{ transaction: any }>('/designer/withdraw', {
-      method: 'POST',
-      body: { amount },
+    const response = await fetch(`${API_URL}/admin/designers`, {
+      headers: getHeaders(),
     });
+    return handleResponse(response);
   }
 }
 

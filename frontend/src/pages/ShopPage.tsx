@@ -1,16 +1,35 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import ProductCard from '@/components/product/ProductCard';
-import { products, Product } from '@/data/products';
+import apiService from '@/services/apiService';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronDown, SlidersHorizontal, X, Loader2 } from 'lucide-react';
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  description: string;
+  image: string;
+  images: string[];
+  sizes: string[];
+  colors: { name: string; hex: string }[];
+  designer?: string;
+  isFeatured: boolean;
+  isNew: boolean;
+  quantity: number;
+}
 
 type SortOption = 'newest' | 'price-low' | 'price-high' | 'name';
 type CategoryFilter = 'all' | 'normal' | 'designer';
 
 const ShopPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -20,6 +39,25 @@ const ShopPage = () => {
   const [category, setCategory] = useState<CategoryFilter>(categoryFromUrl || 'all');
 
   const allSizes = ['S', 'M', 'L', 'XL', 'XXL'];
+
+  // Fetch products from Supabase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await apiService.getProducts();
+        // Filter only in-stock products (quantity > 0)
+        const inStockProducts = (response.products as Product[]).filter(p => p.quantity > 0);
+        setProducts(inStockProducts);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -31,13 +69,13 @@ const ShopPage = () => {
 
     // Size filter
     if (selectedSizes.length > 0) {
-      result = result.filter(p => 
-        selectedSizes.some(size => p.sizes.includes(size))
+      result = result.filter(p =>
+        selectedSizes.some(size => p.sizes?.includes(size))
       );
     }
 
     // Price filter
-    result = result.filter(p => 
+    result = result.filter(p =>
       p.price >= priceRange[0] && p.price <= priceRange[1]
     );
 
@@ -58,7 +96,7 @@ const ShopPage = () => {
     }
 
     return result;
-  }, [category, selectedSizes, priceRange, sortBy]);
+  }, [products, category, selectedSizes, priceRange, sortBy]);
 
   const handleCategoryChange = (newCategory: CategoryFilter) => {
     setCategory(newCategory);
@@ -71,8 +109,8 @@ const ShopPage = () => {
   };
 
   const toggleSize = (size: string) => {
-    setSelectedSizes(prev => 
-      prev.includes(size) 
+    setSelectedSizes(prev =>
+      prev.includes(size)
         ? prev.filter(s => s !== size)
         : [...prev, size]
     );
@@ -99,11 +137,11 @@ const ShopPage = () => {
               {category === 'designer' ? 'DESIGNER SERIES' : category === 'normal' ? 'CLASSIC COLLECTION' : 'ALL T-SHIRTS'}
             </h1>
             <p className="text-muted-foreground mt-4 max-w-lg">
-              {category === 'designer' 
+              {category === 'designer'
                 ? 'Limited edition pieces crafted by world-renowned designers.'
                 : category === 'normal'
-                ? 'Timeless essentials made from premium materials.'
-                : 'Explore our complete collection of premium streetwear.'}
+                  ? 'Timeless essentials made from premium materials.'
+                  : 'Explore our complete collection of premium streetwear.'}
             </p>
           </div>
         </section>
@@ -112,10 +150,9 @@ const ShopPage = () => {
         <section className="sticky top-16 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
           <div className="container mx-auto px-4 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* Left: Filter toggle & Count */}
               <div className="flex items-center gap-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowFilters(!showFilters)}
                   className="gap-2"
                 >
@@ -128,11 +165,10 @@ const ShopPage = () => {
                   )}
                 </Button>
                 <span className="text-muted-foreground text-sm">
-                  {filteredProducts.length} products
+                  {loading ? 'Loading...' : `${filteredProducts.length} products`}
                 </span>
               </div>
 
-              {/* Right: Sort */}
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <select
@@ -165,11 +201,10 @@ const ShopPage = () => {
                       <button
                         key={cat}
                         onClick={() => handleCategoryChange(cat)}
-                        className={`block text-sm transition-smooth ${
-                          category === cat 
-                            ? 'text-primary font-medium' 
+                        className={`block text-sm transition-smooth ${category === cat
+                            ? 'text-primary font-medium'
                             : 'text-muted-foreground hover:text-foreground'
-                        }`}
+                          }`}
                       >
                         {cat === 'all' ? 'All T-Shirts' : cat === 'normal' ? 'Classic Collection' : 'Designer Series'}
                       </button>
@@ -185,11 +220,10 @@ const ShopPage = () => {
                       <button
                         key={size}
                         onClick={() => toggleSize(size)}
-                        className={`w-10 h-10 border text-sm font-medium transition-smooth ${
-                          selectedSizes.includes(size)
+                        className={`w-10 h-10 border text-sm font-medium transition-smooth ${selectedSizes.includes(size)
                             ? 'bg-primary text-primary-foreground border-primary'
                             : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
-                        }`}
+                          }`}
                       >
                         {size}
                       </button>
@@ -239,7 +273,11 @@ const ShopPage = () => {
         {/* Products Grid */}
         <section className="py-12">
           <div className="container mx-auto px-4">
-            {filteredProducts.length > 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredProducts.map((product, index) => (
                   <div
@@ -247,7 +285,7 @@ const ShopPage = () => {
                     className="animate-fade-in"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <ProductCard product={product} />
+                    <ProductCard product={product as any} />
                   </div>
                 ))}
               </div>

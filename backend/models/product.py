@@ -20,6 +20,7 @@ class Product(db.Model):
     is_featured = db.Column(db.Boolean, default=False)
     is_new = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
+    quantity = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):
@@ -38,5 +39,6 @@ class Product(db.Model):
             'designerId': self.designer_id,
             'isFeatured': self.is_featured,
             'isNew': self.is_new,
-            'isActive': self.is_active
+            'isActive': self.is_active,
+            'quantity': self.quantity
         }

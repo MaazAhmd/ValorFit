@@ -30,11 +30,13 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(designer_bp)
     
-    # Create tables and seed data
-    with app.app_context():
-        db.create_all()
-        seed_database()
-    
+    # with app.app_context():
+    #     print("Dropping all tables...")
+    #     db.drop_all()
+    #     print("Creating all tables...")
+    #     db.create_all()
+    #     seed_database()
+
     return app
 
 def seed_database():
