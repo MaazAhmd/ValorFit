@@ -9,3 +9,4 @@ from .product import Product
 from .design import Design
 from .order import Order
 from .transaction import Transaction
+from .tryon import TryOn

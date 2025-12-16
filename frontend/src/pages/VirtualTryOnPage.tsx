@@ -1,40 +1,80 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { products } from '@/data/products';
 import { Button } from '@/components/ui/button';
 import { Upload, Camera, ChevronRight, RefreshCw, Download, Sparkles } from 'lucide-react';
+import { generateTryOn } from '@/services/tryonService';
+import { getProducts, Product } from '@/services/productService';
 
 const VirtualTryOnPage = () => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState(products[0]);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getProducts();
+        setProducts(data);
+        if (data.length > 0) setSelectedProduct(data[0]);
+      } catch (e) {
+        setError("Failed to load products");
+      }
+    }
+    load();
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
+        setSelectedImagePreview(reader.result as string);
         setShowResult(false);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleTryOn = () => {
-    if (!selectedImage) return;
+  const handleTryOn = async () => {
+    if (!selectedImage || !selectedProduct) return;
+    
+    setError(null);
     setIsProcessing(true);
-    // Simulating processing - in real implementation, this would call your API
-    setTimeout(() => {
-      setIsProcessing(false);
+    
+    try {
+      // Fetch product image as File
+      const productImgRes = await fetch(selectedProduct.image_url || "");
+      const productBlob = await productImgRes.blob();
+      const productFile = new File([productBlob], "product.jpg", { type: "image/jpeg" });
+
+      // Call backend try-on
+      const result = await generateTryOn(
+        selectedImage,
+        productFile,
+        selectedProduct.title
+      );
+
+      setResultImage(result.image_url);
       setShowResult(true);
-    }, 2000);
+    } catch (err: any) {
+      setError(err?.message || "Try-on generation failed");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const resetTryOn = () => {
     setSelectedImage(null);
+    setSelectedImagePreview(null);
     setShowResult(false);
+    setResultImage(null);
+    setError(null);
   };
 
   return (
@@ -71,7 +111,7 @@ const VirtualTryOnPage = () => {
                 <h2 className="font-display text-3xl">1. UPLOAD YOUR PHOTO</h2>
                 
                 <div className="relative">
-                  {!selectedImage ? (
+                  {!selectedImagePreview ? (
                     <label className="block aspect-[3/4] bg-card border-2 border-dashed border-border hover:border-primary cursor-pointer transition-smooth group">
                       <input
                         type="file"
@@ -96,7 +136,7 @@ const VirtualTryOnPage = () => {
                   ) : (
                     <div className="relative aspect-[3/4] bg-card">
                       <img
-                        src={showResult ? selectedProduct.image : selectedImage}
+                        src={showResult && resultImage ? resultImage : selectedImagePreview}
                         alt={showResult ? "Try-on result" : "Your photo"}
                         className="w-full h-full object-cover"
                       />
@@ -106,7 +146,7 @@ const VirtualTryOnPage = () => {
                         <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
                           <RefreshCw className="w-12 h-12 text-primary animate-spin" />
                           <p className="text-foreground font-medium">Processing your image...</p>
-                          <p className="text-sm text-muted-foreground">AI magic happening</p>
+                          <p className="text-sm text-muted-foreground">Gemini AI is working its magic</p>
                         </div>
                       )}
 
@@ -116,7 +156,17 @@ const VirtualTryOnPage = () => {
                           <span className="bg-primary text-primary-foreground px-4 py-2 text-sm font-medium">
                             Try-On Result
                           </span>
-                          <Button variant="secondary" size="sm" className="gap-2">
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="gap-2"
+                            onClick={() => {
+                              const a = document.createElement("a");
+                              a.href = resultImage!;
+                              a.download = "tryon-result.jpg";
+                              a.click();
+                            }}
+                          >
                             <Download className="w-4 h-4" />
                             Save
                           </Button>
@@ -136,14 +186,16 @@ const VirtualTryOnPage = () => {
                   )}
                 </div>
 
+                {error && <p className="text-red-600 text-sm">{error}</p>}
+
                 {/* Try On Button */}
                 <Button
                   variant="hero"
                   className="w-full"
-                  disabled={!selectedImage || isProcessing}
+                  disabled={!selectedImagePreview || !selectedProduct || isProcessing}
                   onClick={handleTryOn}
                 >
-                  {isProcessing ? 'Processing...' : 'Try On Selected Tee'}
+                  {isProcessing ? 'Processing with Gemini AI...' : 'Try On Selected Tee'}
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
@@ -161,21 +213,21 @@ const VirtualTryOnPage = () => {
                         setShowResult(false);
                       }}
                       className={`relative aspect-[3/4] bg-card overflow-hidden transition-all duration-300 ${
-                        selectedProduct.id === product.id
+                        selectedProduct?.id === product.id
                           ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                           : 'hover:ring-1 hover:ring-border'
                       }`}
                     >
                       <img
-                        src={product.image}
-                        alt={product.name}
+                        src={product.image_url || "https://via.placeholder.com/200"}
+                        alt={product.title}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background to-transparent p-3">
-                        <p className="text-sm font-medium text-foreground truncate">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">${product.price}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{product.title}</p>
+                        <p className="text-xs text-muted-foreground">${Number(product.price).toFixed(2)}</p>
                       </div>
-                      {selectedProduct.id === product.id && (
+                      {selectedProduct?.id === product.id && (
                         <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                           <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -187,49 +239,21 @@ const VirtualTryOnPage = () => {
                 </div>
 
                 {/* Selected Product Info */}
-                <div className="bg-card p-6 border border-border">
-                  <div className="flex gap-4">
-                    <img
-                      src={selectedProduct.image}
-                      alt={selectedProduct.name}
-                      className="w-20 h-20 object-cover"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-display text-xl">{selectedProduct.name}</h3>
-                      {selectedProduct.designer && (
-                        <p className="text-sm text-muted-foreground">by {selectedProduct.designer}</p>
-                      )}
-                      <p className="text-primary font-medium mt-1">${selectedProduct.price}</p>
+                {selectedProduct && (
+                  <div className="bg-card p-6 border border-border">
+                    <div className="flex gap-4">
+                      <img
+                        src={selectedProduct.image_url || "https://via.placeholder.com/80"}
+                        alt={selectedProduct.title}
+                        className="w-20 h-20 object-cover"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-display text-xl">{selectedProduct.title}</h3>
+                        <p className="text-primary font-medium mt-1">${Number(selectedProduct.price).toFixed(2)}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Tips Section */}
-            <div className="mt-16 grid md:grid-cols-3 gap-8">
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Camera className="w-7 h-7 text-primary" />
-                </div>
-                <h4 className="font-display text-lg mb-2">USE GOOD LIGHTING</h4>
-                <p className="text-sm text-muted-foreground">Natural light works best for accurate results</p>
-              </div>
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <h4 className="font-display text-lg mb-2">FACE THE CAMERA</h4>
-                <p className="text-sm text-muted-foreground">Front-facing photos provide the best fit preview</p>
-              </div>
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-7 h-7 text-primary" />
-                </div>
-                <h4 className="font-display text-lg mb-2">AI MAGIC</h4>
-                <p className="text-sm text-muted-foreground">Our AI adapts the tee to your body shape</p>
+                )}
               </div>
             </div>
           </div>

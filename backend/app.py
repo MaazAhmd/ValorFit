@@ -22,13 +22,15 @@ def create_app():
     from routes.orders import orders_bp
     from routes.admin import admin_bp
     from routes.designer import designer_bp
-    
+    from routes.tryon import tryon_bp
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(products_bp)
     app.register_blueprint(designs_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(designer_bp)
+    app.register_blueprint(tryon_bp)
     
     # with app.app_context():
     #     print("Dropping all tables...")

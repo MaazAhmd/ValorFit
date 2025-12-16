@@ -1,23 +1,60 @@
 import os
 from flask import Blueprint, request, jsonify, current_app
 import requests
+from ..supabase_client import verify_token_get_user, call_postgrest, upload_file_to_storage
+from .tryon_service import generate_tryon
+import asyncio
+import uuid
 
 tryon_bp = Blueprint("tryon", __name__)
 
 @tryon_bp.route("/", methods=["POST"])
-def proxy_tryon():
-    payload = request.get_json() or {}
-    model_name = payload.get("model_name", "tryon-v1.6")
-    inputs = payload.get("inputs", {})
-    api_key = current_app.config.get("FASHN_API_KEY") or os.getenv("FASHN_API_KEY")
-    if not api_key:
-        return jsonify({"message":"FASHN_API_KEY not set"}), 500
-    url = "https://api.fashn.ai/v1/run"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    body = {"model_name": model_name, "inputs": inputs}
+def create_tryon():
+    auth = request.headers.get("Authorization", "")
+    token = auth.split("Bearer ")[-1] if auth else None
+    user = verify_token_get_user(token)
+    
+    if not user:
+        return jsonify({"message": "unauthorized"}), 401
+    
+    # Get files
+    if "user_photo" not in request.files or "product_image" not in request.files:
+        return jsonify({"message": "user_photo and product_image required"}), 400
+    
+    user_photo_file = request.files["user_photo"]
+    product_image_file = request.files["product_image"]
+    product_name = request.form.get("product_name", "t-shirt")
+    
     try:
-        r = requests.post(url, json=body, headers=headers, timeout=120)
-        r.raise_for_status()
-        return jsonify(r.json())
-    except requests.RequestException as exc:
-        return jsonify({"message":"upstream error", "error": str(exc)}), 502
+        # Read image bytes
+        user_photo = user_photo_file.read()
+        product_image = product_image_file.read()
+        
+        # Generate try-on image using Gemini
+        result_image = asyncio.run(generate_tryon(user_photo, product_image, product_name))
+        
+        # Upload result to storage
+        filename = f"tryon_{uuid.uuid4()}.jpg"
+        public_url = upload_file_to_storage(
+            bucket="tryon-results",
+            path=filename,
+            file_data=result_image,
+            content_type="image/jpeg"
+        )
+        
+        # Save try-on record to database (optional)
+        tryon_record = {
+            "user_id": user["id"],
+            "product_name": product_name,
+            "result_image_url": public_url,
+            "storage_path": filename
+        }
+        
+        return jsonify({
+            "success": True,
+            "image_url": public_url,
+            "record": tryon_record
+        }), 200
+    
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
