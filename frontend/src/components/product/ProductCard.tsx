@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Product } from '@/data/products';
+import { Product } from '@/context/CartContext';
 import { Badge } from '@/components/ui/badge';
 
 interface ProductCardProps {

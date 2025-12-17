@@ -1,6 +1,6 @@
 import { authFetch, getToken } from "./authService";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_BASE = "/api";
 
 export type TryOnResponse = {
   image_url?: string;
@@ -20,7 +20,7 @@ export async function generateTryOn(
   formData.append("user_photo", userPhotoFile);
   formData.append("product_id", productId);
 
-  const res = await fetch(`${API_BASE}/api/tryon/generate`, {
+  const res = await fetch(`${API_BASE}/tryon/generate`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -35,13 +35,13 @@ export async function generateTryOn(
 }
 
 export async function getTryOnHistory() {
-  const res = await authFetch(`${API_BASE}/api/tryon/history`);
+  const res = await authFetch(`${API_BASE}/tryon/history`);
   if (!res.ok) throw new Error("Failed to fetch history");
   return res.json();
 }
 
 export async function deleteTryOn(tryOnId: number) {
-  const res = await authFetch(`${API_BASE}/api/tryon/${tryOnId}`, {
+  const res = await authFetch(`${API_BASE}/tryon/${tryOnId}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Delete failed");

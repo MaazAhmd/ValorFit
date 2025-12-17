@@ -45,8 +45,18 @@ def create_tryon():
         # Get product image (download from URL or use local file)
         import requests
         if product.image.startswith('http'):
+            # External URL - download it
             product_image_data = requests.get(product.image).content
+        elif product.image.startswith('/api/uploads/'):
+            # Local upload path - read from uploads folder
+            from config import Config
+            # Extract the path after /api/uploads/
+            relative_path = product.image.replace('/api/uploads/', '')
+            local_path = os.path.join(Config.UPLOAD_FOLDER, relative_path)
+            with open(local_path, 'rb') as f:
+                product_image_data = f.read()
         else:
+            # Direct file path
             with open(product.image, 'rb') as f:
                 product_image_data = f.read()
         

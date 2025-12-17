@@ -33,11 +33,11 @@ def register():
     db.session.commit()
     
     # Create token
-    token = create_access_token(identity=user.id)
+    token = create_access_token(identity=str(user.id))
     
     return jsonify({
         'message': 'Registration successful',
-        'token': token,
+        'access_token': token,
         'user': user.to_dict(include_wallet=True)
     }), 201
 
@@ -62,11 +62,11 @@ def login():
     if user.role != role and user.role != 'admin':
         return jsonify({'message': f'This account is not registered as a {role}'}), 403
     
-    token = create_access_token(identity=user.id)
+    token = create_access_token(identity=str(user.id))
     
     return jsonify({
         'message': 'Login successful',
-        'token': token,
+        'access_token': token,
         'user': user.to_dict(include_wallet=True)
     })
 
@@ -89,11 +89,11 @@ def admin_login():
     if user.role != 'admin':
         return jsonify({'message': 'Access denied. Admin privileges required.'}), 403
     
-    token = create_access_token(identity=user.id)
+    token = create_access_token(identity=str(user.id))
     
     return jsonify({
         'message': 'Admin login successful',
-        'token': token,
+        'access_token': token,
         'user': user.to_dict()
     })
 

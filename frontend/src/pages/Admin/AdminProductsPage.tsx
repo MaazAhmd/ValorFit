@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Package } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Pencil, Trash2, Package, Upload, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,6 +41,8 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Form state
@@ -54,6 +56,10 @@ export default function AdminProductsPage() {
     is_featured: false,
     is_new: false,
   });
+
+  // Image file state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   const fetchProducts = async () => {
     try {
@@ -83,6 +89,8 @@ export default function AdminProductsPage() {
       is_new: false,
     });
     setEditingProduct(null);
+    setImageFile(null);
+    setImagePreview('');
   };
 
   const openEditDialog = (product: Product) => {
@@ -97,13 +105,49 @@ export default function AdminProductsPage() {
       is_featured: product.isFeatured,
       is_new: product.isNew,
     });
+    setImagePreview(product.image);
+    setImageFile(null);
     setDialogOpen(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Error', description: 'Please select an image file', variant: 'destructive' });
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'Image must be less than 10MB', variant: 'destructive' });
+      return;
+    }
+
+    setImageFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate that we have either an image file or existing image URL
+    if (!imageFile && !formData.image) {
+      toast({ title: 'Error', description: 'Please upload a product image', variant: 'destructive' });
+      return;
+    }
+
     try {
+      setUploading(true);
+
       const productData = {
         name: formData.name,
         price: parseFloat(formData.price),
@@ -116,10 +160,10 @@ export default function AdminProductsPage() {
       };
 
       if (editingProduct) {
-        await apiService.updateProduct(parseInt(editingProduct.id), productData);
+        await apiService.updateProductWithImage(parseInt(editingProduct.id), productData, imageFile || undefined);
         toast({ title: 'Success', description: 'Product updated successfully' });
       } else {
-        await apiService.createProduct(productData);
+        await apiService.createProductWithImage(productData, imageFile || undefined);
         toast({ title: 'Success', description: 'Product created successfully' });
       }
 
@@ -128,6 +172,8 @@ export default function AdminProductsPage() {
       fetchProducts();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -220,17 +266,50 @@ export default function AdminProductsPage() {
                 />
               </div>
 
+              {/* Image Upload Section */}
               <div className="space-y-2">
-                <Label>Image URL</Label>
-                <Input
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
-                  required
-                />
-                {formData.image && (
-                  <img src={formData.image} alt="Preview" className="w-24 h-24 object-cover rounded-lg" />
-                )}
+                <Label>Product Image</Label>
+                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+
+                  {imagePreview ? (
+                    <div className="space-y-3">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-32 h-32 object-cover rounded-lg mx-auto"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Change Image
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      className="py-6 cursor-pointer hover:bg-muted/50 transition-colors rounded-lg"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Image className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">
+                        Click to upload product image
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        PNG, JPG, JPEG, GIF, WEBP (max 10MB)
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-between">
@@ -250,8 +329,15 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">
-                {editingProduct ? 'Update Product' : 'Create Product'}
+              <Button type="submit" className="w-full" disabled={uploading}>
+                {uploading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                    {editingProduct ? 'Updating...' : 'Creating...'}
+                  </span>
+                ) : (
+                  editingProduct ? 'Update Product' : 'Create Product'
+                )}
               </Button>
             </form>
           </DialogContent>

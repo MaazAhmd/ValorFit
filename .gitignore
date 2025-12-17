@@ -66,3 +66,10 @@ dmypy.json
 *.db
 *.sqlite
 *.sqlite3
+
+# Uploads (ignore files but keep directory structure)
+backend/uploads/products/*
+backend/uploads/designs/*
+!backend/uploads/.gitkeep
+!backend/uploads/products/.gitkeep
+!backend/uploads/designs/.gitkeep

@@ -8,7 +8,7 @@ import io
 # Configure Gemini API; provide clear error if missing.
 if not Config.GEMINI_API_KEY:
     raise RuntimeError("GEMINI_API_KEY is not set. Add it to your .env or environment.")
-genai.configure(api_key=Config.GEMINI_API_KEY)
+
 
 def image_to_base64(image_data: bytes) -> str:
     """Convert image bytes to base64 string."""
@@ -29,7 +29,7 @@ def generate_tryon(user_photo: bytes, product_image: bytes, product_name: str) -
     - Returns composite image
     """
     try:
-        client = genai.Client()
+        client = genai.Client(api_key=Config.GEMINI_API_KEY)
         
         # Create the composition prompt (same as Java example)
         prompt = f"""Create a professional e-commerce fashion photo.

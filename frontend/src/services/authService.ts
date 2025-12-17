@@ -19,11 +19,11 @@ export async function login(payload: LoginPayload) {
   const txt = await res.text();
   const json = parseJsonSafe(txt);
   if (!res.ok) throw new Error(json?.error?.msg || json?.message || txt || "Login failed");
-  
+
   const token = json?.access_token || json?.accessToken || json?.token;
   if (!token) throw new Error("No token in response");
-  
-  localStorage.setItem("auth_token", token);
+
+  localStorage.setItem("token", token);
   // Store user info from response or metadata
   const user: AuthUser = {
     id: json?.user?.id || "",
@@ -32,7 +32,7 @@ export async function login(payload: LoginPayload) {
     full_name: json?.user?.user_metadata?.full_name,
   };
   localStorage.setItem("auth_user", JSON.stringify(user));
-  
+
   return { token, user, raw: json };
 }
 
@@ -45,15 +45,15 @@ export async function register(payload: RegisterPayload) {
   const txt = await res.text();
   const json = parseJsonSafe(txt);
   if (!res.ok) throw new Error(json?.error || json?.message || txt || "Registration failed");
-  
+
   // After registration, auto-login
   await login({ email: payload.email, password: payload.password, role: payload.role });
-  
+
   return json;
 }
 
 export function getToken() {
-  return localStorage.getItem("auth_token");
+  return localStorage.getItem("token");
 }
 
 export function getUser(): AuthUser | null {
@@ -66,12 +66,12 @@ export function getUserRole(): string | null {
 }
 
 export function setToken(token: string | null) {
-  if (token) localStorage.setItem("auth_token", token);
-  else localStorage.removeItem("auth_token");
+  if (token) localStorage.setItem("token", token);
+  else localStorage.removeItem("token");
 }
 
 export function logout() {
-  localStorage.removeItem("auth_token");
+  localStorage.removeItem("token");
   localStorage.removeItem("auth_user");
 }
 

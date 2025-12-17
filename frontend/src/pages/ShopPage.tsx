@@ -5,23 +5,7 @@ import ProductCard from '@/components/product/ProductCard';
 import apiService from '@/services/apiService';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, SlidersHorizontal, X, Loader2 } from 'lucide-react';
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  category: string;
-  description: string;
-  image: string;
-  images: string[];
-  sizes: string[];
-  colors: { name: string; hex: string }[];
-  designer?: string;
-  isFeatured: boolean;
-  isNew: boolean;
-  quantity: number;
-}
+import { Product } from '@/context/CartContext';
 
 type SortOption = 'newest' | 'price-low' | 'price-high' | 'name';
 type CategoryFilter = 'all' | 'normal' | 'designer';
@@ -202,8 +186,8 @@ const ShopPage = () => {
                         key={cat}
                         onClick={() => handleCategoryChange(cat)}
                         className={`block text-sm transition-smooth ${category === cat
-                            ? 'text-primary font-medium'
-                            : 'text-muted-foreground hover:text-foreground'
+                          ? 'text-primary font-medium'
+                          : 'text-muted-foreground hover:text-foreground'
                           }`}
                       >
                         {cat === 'all' ? 'All T-Shirts' : cat === 'normal' ? 'Classic Collection' : 'Designer Series'}
@@ -221,8 +205,8 @@ const ShopPage = () => {
                         key={size}
                         onClick={() => toggleSize(size)}
                         className={`w-10 h-10 border text-sm font-medium transition-smooth ${selectedSizes.includes(size)
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
                           }`}
                       >
                         {size}

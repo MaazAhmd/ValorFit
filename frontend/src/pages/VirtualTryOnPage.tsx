@@ -3,13 +3,21 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Upload, Camera, ChevronRight, RefreshCw, Download, Sparkles } from 'lucide-react';
 import { generateTryOn } from '@/services/tryonService';
-import { getProducts, Product } from '@/services/productService';
+import apiService from '@/services/apiService';
+
+// Define Interface matching what we use in Component
+interface TryOnProduct {
+  id: string;
+  title: string;
+  price: string | number;
+  image_url: string;
+}
 
 const VirtualTryOnPage = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<TryOnProduct | null>(null);
+  const [products, setProducts] = useState<TryOnProduct[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
@@ -18,10 +26,19 @@ const VirtualTryOnPage = () => {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getProducts();
-        setProducts(data);
-        if (data.length > 0) setSelectedProduct(data[0]);
+        const response = await apiService.getProducts();
+        // Map backend product to TryOnProduct interface
+        const mappedProducts = (response.products || []).map((p: any) => ({
+          id: String(p.id),
+          title: p.name,
+          price: p.price,
+          image_url: p.image // Backend returns 'image', component uses 'image_url'
+        }));
+
+        setProducts(mappedProducts);
+        if (mappedProducts.length > 0) setSelectedProduct(mappedProducts[0]);
       } catch (e) {
+        console.error(e);
         setError("Failed to load products");
       }
     }
@@ -43,25 +60,23 @@ const VirtualTryOnPage = () => {
 
   const handleTryOn = async () => {
     if (!selectedImage || !selectedProduct) return;
-    
+
     setError(null);
     setIsProcessing(true);
-    
-    try {
-      // Fetch product image as File
-      const productImgRes = await fetch(selectedProduct.image_url || "");
-      const productBlob = await productImgRes.blob();
-      const productFile = new File([productBlob], "product.jpg", { type: "image/jpeg" });
 
+    try {
       // Call backend try-on
       const result = await generateTryOn(
         selectedImage,
-        productFile,
-        selectedProduct.title
+        selectedProduct.id
       );
 
-      setResultImage(result.image_url);
-      setShowResult(true);
+      if (result.image_url) {
+        setResultImage(result.image_url);
+        setShowResult(true);
+      } else {
+        throw new Error("No image returned");
+      }
     } catch (err: any) {
       setError(err?.message || "Try-on generation failed");
     } finally {
@@ -109,7 +124,7 @@ const VirtualTryOnPage = () => {
               {/* Left: Upload & Preview */}
               <div className="space-y-6">
                 <h2 className="font-display text-3xl">1. UPLOAD YOUR PHOTO</h2>
-                
+
                 <div className="relative">
                   {!selectedImagePreview ? (
                     <label className="block aspect-[3/4] bg-card border-2 border-dashed border-border hover:border-primary cursor-pointer transition-smooth group">
@@ -140,7 +155,7 @@ const VirtualTryOnPage = () => {
                         alt={showResult ? "Try-on result" : "Your photo"}
                         className="w-full h-full object-cover"
                       />
-                      
+
                       {/* Processing overlay */}
                       {isProcessing && (
                         <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
@@ -156,9 +171,9 @@ const VirtualTryOnPage = () => {
                           <span className="bg-primary text-primary-foreground px-4 py-2 text-sm font-medium">
                             Try-On Result
                           </span>
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
+                          <Button
+                            variant="secondary"
+                            size="sm"
                             className="gap-2"
                             onClick={() => {
                               const a = document.createElement("a");
@@ -203,7 +218,7 @@ const VirtualTryOnPage = () => {
               {/* Right: Product Selection */}
               <div className="space-y-6">
                 <h2 className="font-display text-3xl">2. SELECT A T-SHIRT</h2>
-                
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2">
                   {products.map((product) => (
                     <button
@@ -212,11 +227,10 @@ const VirtualTryOnPage = () => {
                         setSelectedProduct(product);
                         setShowResult(false);
                       }}
-                      className={`relative aspect-[3/4] bg-card overflow-hidden transition-all duration-300 ${
-                        selectedProduct?.id === product.id
-                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                          : 'hover:ring-1 hover:ring-border'
-                      }`}
+                      className={`relative aspect-[3/4] bg-card overflow-hidden transition-all duration-300 ${selectedProduct?.id === product.id
+                        ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                        : 'hover:ring-1 hover:ring-border'
+                        }`}
                     >
                       <img
                         src={product.image_url || "https://via.placeholder.com/200"}

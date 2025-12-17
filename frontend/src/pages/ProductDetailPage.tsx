@@ -1,24 +1,72 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import { getProductById, products } from '@/data/products';
-import { useCart } from '@/context/CartContext';
+import apiService from '@/services/apiService';
+import { useCart, Product } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/product/ProductCard';
-import { ArrowLeft, Minus, Plus, Check, Truck, RotateCcw, Shield } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Check, Truck, RotateCcw, Shield, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const product = getProductById(id || '');
+
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
-  if (!product) {
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const data = await apiService.getProduct(id);
+        const fetchedProduct = data.product;
+        // Normalize product data
+        const p: Product = {
+          ...fetchedProduct,
+          images: fetchedProduct.images || [],
+          sizes: fetchedProduct.sizes || [],
+          colors: fetchedProduct.colors || [],
+        };
+        setProduct(p);
+
+        // Fetch related products (optional optimization: fetch only if product loaded)
+        const allProductsRes = await apiService.getProducts(p.category);
+        const related = (allProductsRes.products || [])
+          .filter((item: any) => String(item.id) !== String(p.id))
+          .slice(0, 4);
+        setRelatedProducts(related);
+
+      } catch (err) {
+        console.error(err);
+        setError("Product not found");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!product || error) {
     return (
       <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -41,7 +89,8 @@ const ProductDetailPage = () => {
       });
       return;
     }
-    if (!selectedColor) {
+    // Color is optional if array is empty
+    if (product.colors && product.colors.length > 0 && !selectedColor) {
       toast({
         title: "Please select a color",
         variant: "destructive",
@@ -49,16 +98,20 @@ const ProductDetailPage = () => {
       return;
     }
 
-    addToCart(product, selectedSize, selectedColor, quantity);
+    // Adapt product to cart item
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      colors: product.colors
+    }, selectedSize, selectedColor, quantity);
+
     toast({
       title: "Added to cart",
-      description: `${product.name} (${selectedSize}, ${selectedColor}) x${quantity}`,
+      description: `${product.name} (${selectedSize}${selectedColor ? `, ${selectedColor}` : ''}) x${quantity}`,
     });
   };
-
-  const relatedProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
 
   return (
     <Layout>
@@ -119,52 +172,54 @@ const ProductDetailPage = () => {
               </p>
 
               {/* Color Selection */}
-              <div>
-                <h4 className="font-display text-sm mb-3">
-                  COLOR: <span className="text-muted-foreground font-body">{selectedColor || 'Select a color'}</span>
-                </h4>
-                <div className="flex gap-3">
-                  {product.colors.map((color) => (
-                    <button
-                      key={color.name}
-                      onClick={() => setSelectedColor(color.name)}
-                      className={`w-10 h-10 rounded-full border-2 transition-smooth ${
-                        selectedColor === color.name
+              {product.colors && product.colors.length > 0 && (
+                <div>
+                  <h4 className="font-display text-sm mb-3">
+                    COLOR: <span className="text-muted-foreground font-body">{selectedColor || 'Select a color'}</span>
+                  </h4>
+                  <div className="flex gap-3">
+                    {product.colors.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`w-10 h-10 rounded-full border-2 transition-smooth ${selectedColor === color.name
                           ? 'border-primary scale-110'
                           : 'border-transparent hover:border-muted-foreground'
-                      }`}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.name}
-                    >
-                      {selectedColor === color.name && (
-                        <Check className="w-5 h-5 mx-auto text-primary-foreground drop-shadow-md" />
-                      )}
-                    </button>
-                  ))}
+                          }`}
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                      >
+                        {selectedColor === color.name && (
+                          <Check className="w-5 h-5 mx-auto text-primary-foreground drop-shadow-md" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Size Selection */}
-              <div>
-                <h4 className="font-display text-sm mb-3">
-                  SIZE: <span className="text-muted-foreground font-body">{selectedSize || 'Select a size'}</span>
-                </h4>
-                <div className="flex flex-wrap gap-3">
-                  {product.sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`w-14 h-14 border text-sm font-medium transition-smooth ${
-                        selectedSize === size
+              {product.sizes && product.sizes.length > 0 && (
+                <div>
+                  <h4 className="font-display text-sm mb-3">
+                    SIZE: <span className="text-muted-foreground font-body">{selectedSize || 'Select a size'}</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-3">
+                    {product.sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`w-14 h-14 border text-sm font-medium transition-smooth ${selectedSize === size
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                          }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Quantity & Add to Cart */}
               <div className="flex flex-col sm:flex-row gap-4">

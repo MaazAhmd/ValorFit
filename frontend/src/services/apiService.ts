@@ -136,7 +136,9 @@ class ApiService {
 
   // Designs
   async getDesigns() {
-    const response = await fetch(`${API_URL}/designs`);
+    const response = await fetch(`${API_URL}/designs`, {
+      headers: getHeaders(),
+    });
     return handleResponse(response);
   }
 
@@ -145,6 +147,24 @@ class ApiService {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(designData),
+    });
+    return handleResponse(response);
+  }
+
+  // Create design with image file upload
+  async createDesignWithImage(designData: any, imageFile?: File) {
+    let imageUrl = designData.image;
+
+    // If an image file is provided, upload it first
+    if (imageFile) {
+      const uploadResult = await this.uploadDesignImage(imageFile);
+      imageUrl = uploadResult.image_url;
+    }
+
+    const response = await fetch(`${API_URL}/designs`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ ...designData, image: imageUrl }),
     });
     return handleResponse(response);
   }
@@ -160,6 +180,74 @@ class ApiService {
   async getDesigners() {
     const response = await fetch(`${API_URL}/admin/designers`, {
       headers: getHeaders(),
+    });
+    return handleResponse(response);
+  }
+
+  // Upload Methods for Local Storage
+  async uploadProductImage(file: File): Promise<{ image_url: string; filename: string }> {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/uploads/product`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    return handleResponse(response);
+  }
+
+  async uploadDesignImage(file: File): Promise<{ image_url: string; filename: string }> {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/uploads/design`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    return handleResponse(response);
+  }
+
+  // Create product with image file upload
+  async createProductWithImage(productData: any, imageFile?: File) {
+    let imageUrl = productData.image;
+
+    // If an image file is provided, upload it first
+    if (imageFile) {
+      const uploadResult = await this.uploadProductImage(imageFile);
+      imageUrl = uploadResult.image_url;
+    }
+
+    // Create the product with the image URL
+    const response = await fetch(`${API_URL}/products`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ ...productData, image: imageUrl }),
+    });
+    return handleResponse(response);
+  }
+
+  // Update product with optional image file upload
+  async updateProductWithImage(id: number, productData: any, imageFile?: File) {
+    let imageUrl = productData.image;
+
+    // If an image file is provided, upload it first
+    if (imageFile) {
+      const uploadResult = await this.uploadProductImage(imageFile);
+      imageUrl = uploadResult.image_url;
+    }
+
+    const response = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ ...productData, image: imageUrl }),
     });
     return handleResponse(response);
   }
