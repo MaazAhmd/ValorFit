@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -27,74 +28,89 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-gradient-hero" />
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+
+      <div className="w-full max-w-md p-8 bg-card/80 backdrop-blur-xl rounded-2xl border border-border shadow-card relative z-10">
         <div className="space-y-8">
           {/* Header */}
-          <header className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-            <p className="text-sm text-black/60">
-              Sign in to continue to T-Shirt Studio
+          <header className="space-y-2 text-center">
+            <Link to="/" className="inline-block">
+              <h1 className="font-display text-3xl text-primary tracking-wider">T-SHIRT STUDIO</h1>
+            </Link>
+            <h2 className="text-2xl font-display tracking-wide text-foreground">WELCOME BACK</h2>
+            <p className="text-sm text-muted-foreground">
+              Sign in to continue to your account
             </p>
           </header>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Email</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm shadow-sm
-                           focus:outline-none focus:ring-2 focus:ring-black/80"
+                className="w-full rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground
+                           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth"
                 placeholder="your@email.com"
               />
             </div>
 
             {/* Password */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Password</label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm shadow-sm
-                           focus:outline-none focus:ring-2 focus:ring-black/80"
+                className="w-full rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground
+                           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-smooth"
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex gap-3 pt-2">
+            <div className="space-y-3 pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 rounded-xl bg-black py-2.5 text-sm font-semibold text-white
-                           shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60"
+                className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground
+                           shadow-lg transition-smooth hover:shadow-glow hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {loading ? "Signing in…" : "Sign in"}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Signing in...
+                  </span>
+                ) : (
+                  "Sign In"
+                )}
               </button>
 
               <Link
                 to="/auth/register"
-                className="flex-1 rounded-xl border border-black/20 py-2.5 text-sm font-semibold text-center
-                           transition hover:bg-black hover:text-white"
+                className="block w-full rounded-lg border border-border py-3 text-sm font-semibold text-center text-foreground
+                           transition-smooth hover:bg-secondary hover:border-primary/50"
               >
-                Create account
+                Create Account
               </Link>
             </div>
           </form>
 
           {/* Back to home */}
           <div className="text-center">
-            <Link to="/" className="text-sm text-black/60 hover:text-black transition">
+            <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-smooth">
               ← Back to Store
             </Link>
           </div>

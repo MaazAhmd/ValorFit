@@ -22,6 +22,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
         {/* Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
+          {product.quantity !== undefined && product.quantity <= 0 && (
+            <Badge className="bg-red-500 text-white uppercase text-xs tracking-wider">
+              Out of Stock
+            </Badge>
+          )}
           {product.isNew && (
             <Badge className="bg-primary text-primary-foreground uppercase text-xs tracking-wider">
               New
@@ -66,17 +71,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
               ${product.originalPrice}
             </span>
           )}
-        </div>
-        {/* Colors */}
-        <div className="flex gap-1 pt-1">
-          {product.colors.map((color) => (
-            <div
-              key={color.name}
-              className="w-4 h-4 rounded-full border border-border"
-              style={{ backgroundColor: color.hex }}
-              title={color.name}
-            />
-          ))}
         </div>
       </div>
     </Link>

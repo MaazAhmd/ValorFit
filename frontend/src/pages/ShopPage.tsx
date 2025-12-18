@@ -8,7 +8,7 @@ import { ChevronDown, SlidersHorizontal, X, Loader2 } from 'lucide-react';
 import { Product } from '@/context/CartContext';
 
 type SortOption = 'newest' | 'price-low' | 'price-high' | 'name';
-type CategoryFilter = 'all' | 'normal' | 'designer';
+type CategoryFilter = 'normal' | 'designer';
 
 const ShopPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,9 +20,15 @@ const ShopPage = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
 
   const categoryFromUrl = searchParams.get('category') as CategoryFilter | null;
-  const [category, setCategory] = useState<CategoryFilter>(categoryFromUrl || 'all');
+  const [category, setCategory] = useState<CategoryFilter>(categoryFromUrl || 'normal');
 
   const allSizes = ['S', 'M', 'L', 'XL', 'XXL'];
+
+  // Sync category with URL changes (when navigating from navbar)
+  useEffect(() => {
+    const urlCategory = searchParams.get('category') as CategoryFilter | null;
+    setCategory(urlCategory || 'normal');
+  }, [searchParams]);
 
   // Fetch products from Supabase
   useEffect(() => {
@@ -30,9 +36,8 @@ const ShopPage = () => {
       try {
         setLoading(true);
         const response = await apiService.getProducts();
-        // Filter only in-stock products (quantity > 0)
-        const inStockProducts = (response.products as Product[]).filter(p => p.quantity > 0);
-        setProducts(inStockProducts);
+        // Show all products (out-of-stock items will be displayed with badges)
+        setProducts(response.products as Product[]);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -46,10 +51,8 @@ const ShopPage = () => {
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // Category filter
-    if (category !== 'all') {
-      result = result.filter(p => p.category === category);
-    }
+    // Category filter - always filter by category (no 'all' option)
+    result = result.filter(p => p.category === category);
 
     // Size filter
     if (selectedSizes.length > 0) {
@@ -79,16 +82,19 @@ const ShopPage = () => {
         result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
     }
 
+    // Secondary sort: push out-of-stock items to the end
+    result.sort((a, b) => {
+      const aOutOfStock = (a.quantity !== undefined && a.quantity <= 0) ? 1 : 0;
+      const bOutOfStock = (b.quantity !== undefined && b.quantity <= 0) ? 1 : 0;
+      return aOutOfStock - bOutOfStock;
+    });
+
     return result;
   }, [products, category, selectedSizes, priceRange, sortBy]);
 
   const handleCategoryChange = (newCategory: CategoryFilter) => {
     setCategory(newCategory);
-    if (newCategory === 'all') {
-      searchParams.delete('category');
-    } else {
-      searchParams.set('category', newCategory);
-    }
+    searchParams.set('category', newCategory);
     setSearchParams(searchParams);
   };
 
@@ -103,10 +109,10 @@ const ShopPage = () => {
   const clearFilters = () => {
     setSelectedSizes([]);
     setPriceRange([0, 200]);
-    handleCategoryChange('all');
+    // Keep current category, just clear other filters
   };
 
-  const hasActiveFilters = selectedSizes.length > 0 || priceRange[0] > 0 || priceRange[1] < 200 || category !== 'all';
+  const hasActiveFilters = selectedSizes.length > 0 || priceRange[0] > 0 || priceRange[1] < 200;
 
   return (
     <Layout>
@@ -118,14 +124,12 @@ const ShopPage = () => {
               Collection
             </span>
             <h1 className="font-display text-6xl md:text-8xl mt-4">
-              {category === 'designer' ? 'DESIGNER SERIES' : category === 'normal' ? 'CLASSIC COLLECTION' : 'ALL T-SHIRTS'}
+              {category === 'designer' ? 'DESIGNER SERIES' : 'CLASSIC COLLECTION'}
             </h1>
             <p className="text-muted-foreground mt-4 max-w-lg">
               {category === 'designer'
                 ? 'Limited edition pieces crafted by world-renowned designers.'
-                : category === 'normal'
-                  ? 'Timeless essentials made from premium materials.'
-                  : 'Explore our complete collection of premium streetwear.'}
+                : 'Timeless essentials made from premium materials.'}
             </p>
           </div>
         </section>
@@ -181,7 +185,7 @@ const ShopPage = () => {
                 <div>
                   <h4 className="font-display text-lg mb-4">CATEGORY</h4>
                   <div className="space-y-2">
-                    {(['all', 'normal', 'designer'] as const).map((cat) => (
+                    {(['normal', 'designer'] as const).map((cat) => (
                       <button
                         key={cat}
                         onClick={() => handleCategoryChange(cat)}
@@ -190,7 +194,7 @@ const ShopPage = () => {
                           : 'text-muted-foreground hover:text-foreground'
                           }`}
                       >
-                        {cat === 'all' ? 'All T-Shirts' : cat === 'normal' ? 'Classic Collection' : 'Designer Series'}
+                        {cat === 'normal' ? 'Classic Collection' : 'Designer Series'}
                       </button>
                     ))}
                   </div>

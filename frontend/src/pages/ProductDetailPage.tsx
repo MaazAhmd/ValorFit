@@ -5,8 +5,9 @@ import apiService from '@/services/apiService';
 import { useCart, Product } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/product/ProductCard';
-import { ArrowLeft, Minus, Plus, Check, Truck, RotateCcw, Shield, Loader2 } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Truck, RotateCcw, Shield, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,9 +19,11 @@ const ProductDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+
+  // Check if product is out of stock
+  const isOutOfStock = product ? (product.quantity !== undefined && product.quantity <= 0) : false;
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -89,10 +92,12 @@ const ProductDetailPage = () => {
       });
       return;
     }
-    // Color is optional if array is empty
-    if (product.colors && product.colors.length > 0 && !selectedColor) {
+
+    // Check if out of stock
+    if (isOutOfStock) {
       toast({
-        title: "Please select a color",
+        title: "Out of Stock",
+        description: "This product is currently out of stock.",
         variant: "destructive",
       });
       return;
@@ -104,12 +109,12 @@ const ProductDetailPage = () => {
       name: product.name,
       price: product.price,
       image: product.image,
-      colors: product.colors
-    }, selectedSize, selectedColor, quantity);
+      colors: []
+    }, selectedSize, '', quantity);
 
     toast({
       title: "Added to cart",
-      description: `${product.name} (${selectedSize}${selectedColor ? `, ${selectedColor}` : ''}) x${quantity}`,
+      description: `${product.name} (${selectedSize}) x${quantity}`,
     });
   };
 
@@ -154,6 +159,12 @@ const ProductDetailPage = () => {
                 {product.designer && (
                   <p className="text-muted-foreground mt-2">by {product.designer}</p>
                 )}
+                {isOutOfStock && (
+                  <Badge className="mt-3 bg-red-500/10 text-red-500 border border-red-500/30 uppercase text-sm tracking-wider inline-flex items-center">
+                    <AlertTriangle className="w-4 h-4 mr-1" />
+                    Out of Stock
+                  </Badge>
+                )}
               </div>
 
               {/* Price */}
@@ -170,33 +181,6 @@ const ProductDetailPage = () => {
               <p className="text-muted-foreground leading-relaxed">
                 {product.description}
               </p>
-
-              {/* Color Selection */}
-              {product.colors && product.colors.length > 0 && (
-                <div>
-                  <h4 className="font-display text-sm mb-3">
-                    COLOR: <span className="text-muted-foreground font-body">{selectedColor || 'Select a color'}</span>
-                  </h4>
-                  <div className="flex gap-3">
-                    {product.colors.map((color) => (
-                      <button
-                        key={color.name}
-                        onClick={() => setSelectedColor(color.name)}
-                        className={`w-10 h-10 rounded-full border-2 transition-smooth ${selectedColor === color.name
-                          ? 'border-primary scale-110'
-                          : 'border-transparent hover:border-muted-foreground'
-                          }`}
-                        style={{ backgroundColor: color.hex }}
-                        title={color.name}
-                      >
-                        {selectedColor === color.name && (
-                          <Check className="w-5 h-5 mx-auto text-primary-foreground drop-shadow-md" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Size Selection */}
               {product.sizes && product.sizes.length > 0 && (
@@ -238,8 +222,13 @@ const ProductDetailPage = () => {
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
-                <Button variant="hero" className="flex-1" onClick={handleAddToCart}>
-                  Add to Cart
+                <Button
+                  variant="hero"
+                  className="flex-1"
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock}
+                >
+                  {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                 </Button>
               </div>
 

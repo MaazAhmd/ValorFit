@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import apiService from '@/services/apiService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -55,7 +56,11 @@ export default function AdminProductsPage() {
     image: '',
     is_featured: false,
     is_new: false,
+    is_infinite: false,
   });
+
+  // Constant for infinite stock
+  const INFINITE_STOCK_VALUE = 999999;
 
   // Image file state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -87,6 +92,7 @@ export default function AdminProductsPage() {
       image: '',
       is_featured: false,
       is_new: false,
+      is_infinite: false,
     });
     setEditingProduct(null);
     setImageFile(null);
@@ -94,16 +100,18 @@ export default function AdminProductsPage() {
   };
 
   const openEditDialog = (product: Product) => {
+    const isInfinite = product.quantity >= INFINITE_STOCK_VALUE;
     setEditingProduct(product);
     setFormData({
       name: product.name,
       price: String(product.price),
-      quantity: String(product.quantity),
+      quantity: isInfinite ? '' : String(product.quantity),
       category: product.category,
       description: product.description || '',
       image: product.image,
       is_featured: product.isFeatured,
       is_new: product.isNew,
+      is_infinite: isInfinite,
     });
     setImagePreview(product.image);
     setImageFile(null);
@@ -151,7 +159,7 @@ export default function AdminProductsPage() {
       const productData = {
         name: formData.name,
         price: parseFloat(formData.price),
-        quantity: parseInt(formData.quantity),
+        quantity: formData.is_infinite ? INFINITE_STOCK_VALUE : parseInt(formData.quantity),
         category: formData.category,
         description: formData.description,
         image: formData.image,
@@ -238,8 +246,19 @@ export default function AdminProductsPage() {
                     value={formData.quantity}
                     onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                     placeholder="100"
-                    required
+                    required={!formData.is_infinite}
+                    disabled={formData.is_infinite}
                   />
+                  <div className="flex items-center gap-2 pt-1">
+                    <Checkbox
+                      id="infinite-stock"
+                      checked={formData.is_infinite}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_infinite: !!checked, quantity: checked ? '' : formData.quantity })}
+                    />
+                    <label htmlFor="infinite-stock" className="text-sm text-muted-foreground cursor-pointer">
+                      Infinite Stock (no limit)
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -390,8 +409,12 @@ export default function AdminProductsPage() {
                     <td className="p-4 capitalize">{product.category}</td>
                     <td className="p-4">${product.price.toFixed(2)}</td>
                     <td className="p-4">
-                      <span className={product.quantity <= 5 ? 'text-red-500 font-medium' : ''}>
-                        {product.quantity}
+                      <span className={product.quantity <= 5 && product.quantity < INFINITE_STOCK_VALUE ? 'text-red-500 font-medium' : ''}>
+                        {product.quantity >= INFINITE_STOCK_VALUE ? (
+                          <span className="text-green-500 font-medium">∞ Infinite</span>
+                        ) : (
+                          product.quantity
+                        )}
                       </span>
                     </td>
                     <td className="p-4">
