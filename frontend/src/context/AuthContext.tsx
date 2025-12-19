@@ -18,6 +18,7 @@ interface AuthContextType {
   adminLogin: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role: 'customer' | 'designer') => Promise<void>;
   logout: () => void;
+  setAuthData: (user: User, token: string) => void;
   isAdmin: boolean;
   isDesigner: boolean;
   isCustomer: boolean;
@@ -70,6 +71,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const setAuthData = (userData: User, token: string) => {
+    localStorage.setItem('token', token);
+    setUser(userData);
+  };
+
   const isAuthenticated = !!user;
   const isAdmin = user?.role === 'admin';
   const isDesigner = user?.role === 'designer' || user?.role === 'admin';
@@ -85,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adminLogin,
         register,
         logout,
+        setAuthData,
         isAdmin,
         isDesigner,
         isCustomer,

@@ -19,6 +19,8 @@ interface Design {
   sales?: number;
   revenue?: number;
   rejectionReason?: string;
+  price?: number;
+  description?: string;
 }
 
 export default function DesignerDesigns() {
@@ -33,6 +35,7 @@ export default function DesignerDesigns() {
     name: '',
     description: '',
     tags: '',
+    price: '29.99',
   });
 
   // Image upload state
@@ -93,7 +96,7 @@ export default function DesignerDesigns() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', tags: '' });
+    setFormData({ name: '', description: '', tags: '', price: '29.99' });
     setImageFile(null);
     setImagePreview('');
     if (fileInputRef.current) {
@@ -118,6 +121,8 @@ export default function DesignerDesigns() {
     try {
       await apiService.createDesignWithImage({
         name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price) || 29.99,
         category: 'designer',
       }, imageFile);
 
@@ -175,6 +180,21 @@ export default function DesignerDesigns() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
+              </div>
+              <div>
+                <Label htmlFor="price">Price ($)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="10"
+                  placeholder="29.99"
+                  className="bg-background"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">Minimum $10.00. This will be the selling price.</p>
               </div>
               <div>
                 <Label htmlFor="tags">Tags (comma separated)</Label>
@@ -319,7 +339,10 @@ export default function DesignerDesigns() {
                 </span>
               </div>
               <CardContent className="p-4">
-                <h3 className="font-medium">{design.name}</h3>
+                <div className="flex justify-between items-start">
+                  <h3 className="font-medium">{design.name}</h3>
+                  <span className="text-primary font-bold">${design.price?.toFixed(2) || '29.99'}</span>
+                </div>
                 {design.uploadDate && (
                   <p className="text-xs text-muted-foreground">Uploaded: {design.uploadDate}</p>
                 )}

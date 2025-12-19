@@ -9,31 +9,121 @@ designer_bp = Blueprint('designer', __name__, url_prefix='/api/designer')
 @jwt_required()
 @designer_required
 def get_designer_stats():
-    """Get dashboard statistics for designer."""
+    """Get dashboard statistics for designer with optional date filtering."""
+    from datetime import datetime
+    import json
+    
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     
     if not user:
         return jsonify({'message': 'User not found'}), 404
     
+    # Get date filters from query params
+    date_from = request.args.get('dateFrom')
+    date_to = request.args.get('dateTo')
+    
+    # Get all designs by this designer
     designs = Design.query.filter_by(designer_id=user_id).all()
     approved_designs = [d for d in designs if d.status == 'approved']
     pending_designs = [d for d in designs if d.status == 'pending']
     
-    total_sales = sum(d.sales for d in designs)
-    total_revenue = sum(d.revenue for d in designs)
-    total_earnings = total_revenue * 0.05  # 5% commission
+    # Get all products by this designer
+    from models import Product, Order
+    products = Product.query.filter_by(designer_id=user_id, is_active=True).all()
+    product_ids = [p.id for p in products]
+    
+    # Get all orders and filter for this designer's products
+    orders_query = Order.query
+    
+    # Apply date filters
+    if date_from:
+        try:
+            from_date = datetime.strptime(date_from, '%Y-%m-%d')
+            orders_query = orders_query.filter(Order.created_at >= from_date)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            to_date = datetime.strptime(date_to, '%Y-%m-%d')
+            # Add 1 day to include the end date
+            to_date = datetime(to_date.year, to_date.month, to_date.day, 23, 59, 59)
+            orders_query = orders_query.filter(Order.created_at <= to_date)
+        except ValueError:
+            pass
+    
+    all_orders = orders_query.filter(Order.status != 'cancelled').all()
+    
+    # Calculate sales for each product
+    product_sales = {}
+    total_sales = 0
+    total_revenue = 0
+    
+    for order in all_orders:
+        try:
+            items = json.loads(order.items) if order.items else []
+            for item in items:
+                item_product_id = item.get('productId') or item.get('id')
+                if item_product_id:
+                    try:
+                        item_product_id = int(item_product_id)
+                    except (ValueError, TypeError):
+                        continue
+                    
+                    if item_product_id in product_ids:
+                        quantity = item.get('quantity', 1)
+                        price = item.get('price', 0)
+                        item_total = price * quantity
+                        
+                        if item_product_id not in product_sales:
+                            # Find the product
+                            product = next((p for p in products if p.id == item_product_id), None)
+                            product_sales[item_product_id] = {
+                                'productId': str(item_product_id),
+                                'productName': product.name if product else item.get('name', 'Unknown'),
+                                'productImage': product.image if product else item.get('image', ''),
+                                'unitsSold': 0,
+                                'revenue': 0,
+                                'commission': 0
+                            }
+                        
+                        product_sales[item_product_id]['unitsSold'] += quantity
+                        product_sales[item_product_id]['revenue'] += item_total
+                        product_sales[item_product_id]['commission'] += item_total * 0.05
+                        
+                        total_sales += quantity
+                        total_revenue += item_total
+        except (json.JSONDecodeError, TypeError):
+            continue
+    
+    # Convert to list and sort by units sold
+    product_sales_list = sorted(
+        product_sales.values(), 
+        key=lambda x: x['unitsSold'], 
+        reverse=True
+    )
+    
+    # Round values
+    for ps in product_sales_list:
+        ps['revenue'] = round(ps['revenue'], 2)
+        ps['commission'] = round(ps['commission'], 2)
+    
+    total_commission = total_revenue * 0.05
     
     return jsonify({
         'stats': {
             'totalDesigns': len(designs),
             'approvedDesigns': len(approved_designs),
             'pendingDesigns': len(pending_designs),
+            'activeProducts': len(products),
             'totalSales': total_sales,
             'totalRevenue': round(total_revenue, 2),
-            'totalEarnings': round(total_earnings, 2),
+            'totalCommission': round(total_commission, 2),
             'walletBalance': user.wallet_balance
-        }
+        },
+        'productSales': product_sales_list,
+        'designs': [d.to_dict() for d in designs]
     })
 
 @designer_bp.route('/transactions', methods=['GET'])

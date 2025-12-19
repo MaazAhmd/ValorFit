@@ -55,11 +55,11 @@ const AboutPage = () => {
             </span>
             <h1 className="font-display text-6xl md:text-8xl mt-4">
               ABOUT<br />
-              <span className="text-gradient">THREAD.</span>
+              <span className="text-gradient">VALORFIT</span>
             </h1>
             <p className="text-muted-foreground mt-6 max-w-2xl text-lg leading-relaxed">
-              Born from a passion for premium streetwear and authentic self-expression.
-              We create more than t-shirts — we craft canvases for your identity.
+              Born from a passion for premium athletic wear and the pursuit of excellence.
+              We create more than apparel — we craft performance gear for champions.
             </p>
           </div>
         </section>
@@ -74,20 +74,20 @@ const AboutPage = () => {
                 </h2>
                 <div className="space-y-6 text-muted-foreground leading-relaxed">
                   <p>
-                    THREAD was founded in 2020, in a small studio in Brooklyn, New York. 
-                    What started as a passion project between friends who believed that 
-                    everyday clothing could be something more — a statement, an identity, 
-                    a work of art.
+                    ValorFit was founded in 2020, in a fitness community in Los Angeles.
+                    What started as a passion project between athletes who believed that
+                    gym wear could be something more — a statement of dedication,
+                    a symbol of your commitment to excellence.
                   </p>
                   <p>
-                    We saw a gap in the market: streetwear that didn't compromise on quality, 
-                    designs that stood out without screaming for attention, and a brand that 
-                    truly understood its community.
+                    We saw a gap in the market: athletic wear that didn't compromise on quality,
+                    designs that looked great in and out of the gym, and a brand that
+                    truly understood the fitness community.
                   </p>
                   <p>
-                    Today, we've grown from that small studio to a global brand, but our 
-                    mission remains the same: create premium tees that help you express 
-                    who you are.
+                    Today, we've grown from that small community to a global brand, but our
+                    mission remains the same: create premium athletic apparel that helps you
+                    perform your best.
                   </p>
                 </div>
               </div>
@@ -141,7 +141,7 @@ const AboutPage = () => {
               <span className="text-primary uppercase tracking-[0.3em] text-sm font-medium">
                 Meet The Team
               </span>
-              <h2 className="font-display text-5xl mt-4">THE FACES BEHIND THREAD</h2>
+              <h2 className="font-display text-5xl mt-4">THE FACES BEHIND VALORFIT</h2>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">

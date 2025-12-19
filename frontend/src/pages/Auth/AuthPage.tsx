@@ -11,7 +11,7 @@ const redirectByRole = (navigate: any, role?: string) => {
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { isLoggedIn, login: authLogin } = useAuth();
+  const { isAuthenticated, setAuthData } = useAuth();
   const [searchParams] = useSearchParams();
   const initialMode = (searchParams.get("mode") as "login" | "register") || "login";
 
@@ -24,8 +24,8 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoggedIn) navigate("/");
-  }, [isLoggedIn, navigate]);
+    if (isAuthenticated) navigate("/");
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     setMode(initialMode);
@@ -45,8 +45,8 @@ export default function AuthPage() {
       } else {
         result = await register({ email, password, name, role });
       }
-      // Update auth context
-      authLogin(result.user, result.token);
+      // Update auth context with the user data and token
+      setAuthData(result.user, result.access_token);
       redirectByRole(navigate, result.user?.role || getUserRole());
     } catch (err: any) {
       setError(err?.message || "Authentication failed.");
@@ -74,7 +74,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md">
         {/* Header */}
         <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">T‑Shirt Studio</h1>
+          <h1 className="text-3xl font-bold tracking-tight">ValorFit</h1>
           <p className="text-sm text-black/60 mt-2">
             {mode === "login" ? "Sign in to your account" : "Create a new account"}
           </p>
@@ -130,11 +130,10 @@ export default function AuthPage() {
                     key={r}
                     type="button"
                     onClick={() => setRole(r as any)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
-                      role === r
-                        ? "bg-black text-white shadow-md"
-                        : "border border-black/20 hover:bg-black/5"
-                    }`}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${role === r
+                      ? "bg-black text-white shadow-md"
+                      : "border border-black/20 hover:bg-black/5"
+                      }`}
                   >
                     {r.charAt(0).toUpperCase() + r.slice(1)}
                   </button>

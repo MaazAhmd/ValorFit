@@ -1,31 +1,125 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Wallet, ArrowUpRight, ArrowDownLeft, Clock, DollarSign, CreditCard } from 'lucide-react';
-import { currentDesigner, transactions } from '@/data/adminData';
+import { Wallet, ArrowUpRight, ArrowDownLeft, Clock, DollarSign, CreditCard, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import apiService from '@/services/apiService';
+
+interface Transaction {
+  id: string;
+  type: 'earning' | 'withdrawal' | 'pending';
+  amount: number;
+  description: string;
+  date: string;
+  status: 'completed' | 'pending' | 'failed';
+}
+
+interface WalletData {
+  walletBalance: number;
+  totalCommission: number;
+  totalSales: number;
+}
 
 export default function DesignerWallet() {
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [walletData, setWalletData] = useState<WalletData>({ walletBalance: 0, totalCommission: 0, totalSales: 0 });
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch designer stats
+        const statsResponse = await apiService.getDesignerStats();
+        setWalletData({
+          walletBalance: statsResponse.stats.walletBalance || 0,
+          totalCommission: statsResponse.stats.totalCommission || 0,
+          totalSales: statsResponse.stats.totalSales || 0
+        });
+
+        // Fetch transactions - using the designer transactions endpoint
+        try {
+          const token = localStorage.getItem('token');
+          const txResponse = await fetch('/api/designer/transactions', {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          });
+          if (txResponse.ok) {
+            const txData = await txResponse.json();
+            setTransactions(txData.transactions || []);
+          }
+        } catch (e) {
+          console.log('No transactions found');
+        }
+      } catch (error) {
+        console.error('Error fetching wallet data:', error);
+        toast.error('Failed to load wallet data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const pendingEarnings = transactions
     .filter(t => t.type === 'pending' && t.status === 'pending')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const handleWithdraw = (e: React.FormEvent) => {
+  const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(withdrawAmount);
-    if (amount > currentDesigner.walletBalance) {
+
+    if (amount > walletData.walletBalance) {
       toast.error('Insufficient balance');
       return;
     }
-    toast.success(`Withdrawal of $${amount.toFixed(2)} initiated`);
-    setShowWithdrawDialog(false);
-    setWithdrawAmount('');
+
+    if (amount < 10) {
+      toast.error('Minimum withdrawal is $10.00');
+      return;
+    }
+
+    try {
+      setIsWithdrawing(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/designer/withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ amount }),
+      });
+
+      if (response.ok) {
+        toast.success(`Withdrawal of $${amount.toFixed(2)} initiated`);
+        setShowWithdrawDialog(false);
+        setWithdrawAmount('');
+        // Refresh wallet data
+        const statsResponse = await apiService.getDesignerStats();
+        setWalletData({
+          walletBalance: statsResponse.stats.walletBalance || 0,
+          totalCommission: statsResponse.stats.totalCommission || 0,
+          totalSales: statsResponse.stats.totalSales || 0
+        });
+      } else {
+        const data = await response.json();
+        toast.error(data.message || 'Failed to process withdrawal');
+      }
+    } catch (error) {
+      toast.error('Failed to process withdrawal');
+    } finally {
+      setIsWithdrawing(false);
+    }
   };
 
   const getTransactionIcon = (type: string) => {
@@ -46,6 +140,14 @@ export default function DesignerWallet() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -60,7 +162,7 @@ export default function DesignerWallet() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Available Balance</p>
-                <p className="text-3xl font-bold text-primary">${currentDesigner.walletBalance.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-primary">${walletData.walletBalance.toFixed(2)}</p>
               </div>
               <div className="p-3 bg-primary/20 rounded-full">
                 <Wallet className="h-8 w-8 text-primary" />
@@ -68,7 +170,9 @@ export default function DesignerWallet() {
             </div>
             <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
               <DialogTrigger asChild>
-                <Button className="w-full mt-4">Withdraw Funds</Button>
+                <Button className="w-full mt-4" disabled={walletData.walletBalance < 10}>
+                  Withdraw Funds
+                </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -84,7 +188,7 @@ export default function DesignerWallet() {
                         type="number"
                         step="0.01"
                         min="10"
-                        max={currentDesigner.walletBalance}
+                        max={walletData.walletBalance}
                         value={withdrawAmount}
                         onChange={(e) => setWithdrawAmount(e.target.value)}
                         placeholder="0.00"
@@ -92,7 +196,7 @@ export default function DesignerWallet() {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Available: ${currentDesigner.walletBalance.toFixed(2)} • Min: $10.00
+                      Available: ${walletData.walletBalance.toFixed(2)} • Min: $10.00
                     </p>
                   </div>
                   <div>
@@ -112,7 +216,12 @@ export default function DesignerWallet() {
                     <p className="font-medium mb-1">Processing Time</p>
                     <p className="text-muted-foreground">Bank transfers take 3-5 business days. PayPal withdrawals are typically instant.</p>
                   </div>
-                  <Button type="submit" className="w-full" disabled={!withdrawAmount || parseFloat(withdrawAmount) < 10}>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={!withdrawAmount || parseFloat(withdrawAmount) < 10 || isWithdrawing}
+                  >
+                    {isWithdrawing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Confirm Withdrawal
                   </Button>
                 </form>
@@ -126,13 +235,13 @@ export default function DesignerWallet() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Earnings</p>
-                <p className="text-3xl font-bold text-green-500">${currentDesigner.totalEarnings.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-green-500">${walletData.totalCommission.toFixed(2)}</p>
               </div>
               <div className="p-3 bg-green-500/20 rounded-full">
                 <DollarSign className="h-8 w-8 text-green-500" />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-4">Lifetime earnings from {currentDesigner.totalSales} sales</p>
+            <p className="text-xs text-muted-foreground mt-4">Lifetime earnings from {walletData.totalSales} sales</p>
           </CardContent>
         </Card>
 
@@ -173,37 +282,43 @@ export default function DesignerWallet() {
           <CardTitle>Transaction History</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {transactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-full ${
-                    transaction.type === 'earning' ? 'bg-green-500/20' :
-                    transaction.type === 'withdrawal' ? 'bg-red-500/20' :
-                    'bg-yellow-500/20'
-                  }`}>
-                    {getTransactionIcon(transaction.type)}
+          {transactions.length === 0 ? (
+            <div className="text-center py-8">
+              <DollarSign className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No transactions yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Your earnings and withdrawals will appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {transactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2 rounded-full ${transaction.type === 'earning' ? 'bg-green-500/20' :
+                        transaction.type === 'withdrawal' ? 'bg-red-500/20' :
+                          'bg-yellow-500/20'
+                      }`}>
+                      {getTransactionIcon(transaction.type)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{transaction.description}</p>
+                      <p className="text-xs text-muted-foreground">{transaction.date}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">{transaction.description}</p>
-                    <p className="text-xs text-muted-foreground">{transaction.date}</p>
+                  <div className="text-right">
+                    <p className={`font-bold ${getTransactionColor(transaction.type)}`}>
+                      {transaction.type === 'withdrawal' ? '-' : '+'}${Math.abs(transaction.amount).toFixed(2)}
+                    </p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${transaction.status === 'completed' ? 'bg-green-500/20 text-green-500' :
+                        transaction.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
+                          'bg-red-500/20 text-red-500'
+                      }`}>
+                      {transaction.status}
+                    </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`font-bold ${getTransactionColor(transaction.type)}`}>
-                    {transaction.type === 'withdrawal' ? '-' : '+'}${Math.abs(transaction.amount).toFixed(2)}
-                  </p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    transaction.status === 'completed' ? 'bg-green-500/20 text-green-500' :
-                    transaction.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
-                    'bg-red-500/20 text-red-500'
-                  }`}>
-                    {transaction.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

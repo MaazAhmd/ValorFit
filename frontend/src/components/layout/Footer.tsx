@@ -9,11 +9,11 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <h3 className="font-display text-2xl tracking-wider">
-              THREAD<span className="text-primary">.</span>
+              VALOR<span className="text-primary">FIT</span>
             </h3>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Premium streetwear for those who dare to stand out. 
-              Crafted with precision, worn with pride.
+              Premium gym and athletic apparel for those who push their limits.
+              Crafted for performance, worn with pride.
             </p>
             <div className="flex gap-4">
               <a href="#" className="text-muted-foreground hover:text-primary transition-smooth">
@@ -84,7 +84,7 @@ const Footer = () => {
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 THREAD. All rights reserved.
+            © 2024 ValorFit. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-smooth">Privacy</a>

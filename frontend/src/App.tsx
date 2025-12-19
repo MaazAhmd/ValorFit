@@ -14,6 +14,7 @@ import AboutPage from "./pages/AboutPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
+import MyOrdersPage from "./pages/MyOrdersPage";
 import NotFound from "./pages/NotFound";
 
 // Auth pages
@@ -33,7 +34,6 @@ import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import { DesignerLayout } from "./components/designer/DesignerLayout";
 import DesignerDashboard from "./pages/designer/DesignerDashboard";
 import DesignerDesigns from "./pages/designer/DesignerDesigns";
-import DesignerSales from "./pages/designer/DesignerSales";
 import DesignerWallet from "./pages/designer/DesignerWallet";
 
 const queryClient = new QueryClient();
@@ -98,16 +98,47 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Customer Only Route - prevents admins and designers from accessing store pages
+function CustomerOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // If user is admin, redirect to admin dashboard
+  if (isAuthenticated && user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // If user is designer, redirect to designer dashboard
+  if (isAuthenticated && user?.role === 'designer') {
+    return <Navigate to="/designer" replace />;
+  }
+
+  // Allow access for customers and non-authenticated users
+  return <>{children}</>;
+}
+
 const AppRoutes = () => (
   <Routes>
-    {/* Public store routes */}
-    <Route path="/" element={<Index />} />
-    <Route path="/shop" element={<ShopPage />} />
-    <Route path="/virtual-try-on" element={<VirtualTryOnPage />} />
-    <Route path="/about" element={<AboutPage />} />
-    <Route path="/cart" element={<CartPage />} />
-    <Route path="/checkout" element={<CheckoutPage />} />
-    <Route path="/product/:id" element={<ProductDetailPage />} />
+    {/* Public store routes - customers only */}
+    <Route path="/" element={<CustomerOnlyRoute><Index /></CustomerOnlyRoute>} />
+    <Route path="/shop" element={<CustomerOnlyRoute><ShopPage /></CustomerOnlyRoute>} />
+    <Route path="/virtual-try-on" element={<CustomerOnlyRoute><VirtualTryOnPage /></CustomerOnlyRoute>} />
+    <Route path="/about" element={<CustomerOnlyRoute><AboutPage /></CustomerOnlyRoute>} />
+    <Route path="/cart" element={<CustomerOnlyRoute><CartPage /></CustomerOnlyRoute>} />
+    <Route path="/checkout" element={<CustomerOnlyRoute><CheckoutPage /></CustomerOnlyRoute>} />
+    <Route path="/product/:id" element={<CustomerOnlyRoute><ProductDetailPage /></CustomerOnlyRoute>} />
+    <Route path="/orders" element={
+      <ProtectedRoute allowedRoles={['customer']}>
+        <MyOrdersPage />
+      </ProtectedRoute>
+    } />
 
     {/* Auth routes */}
     <Route path="/auth/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
@@ -127,15 +158,14 @@ const AppRoutes = () => (
       <Route path="designers" element={<AdminDesigners />} />
     </Route>
 
-    {/* Designer routes - designer and admin */}
+    {/* Designer routes - designer only (not admin) */}
     <Route path="/designer" element={
-      <ProtectedRoute allowedRoles={['designer', 'admin']}>
+      <ProtectedRoute allowedRoles={['designer']}>
         <DesignerLayout />
       </ProtectedRoute>
     }>
       <Route index element={<DesignerDashboard />} />
       <Route path="designs" element={<DesignerDesigns />} />
-      <Route path="sales" element={<DesignerSales />} />
       <Route path="wallet" element={<DesignerWallet />} />
     </Route>
 

@@ -112,7 +112,7 @@ class ApiService {
   }
 
   async getOrders() {
-    const response = await fetch(`${API_URL}/orders/my-orders`, {
+    const response = await fetch(`${API_URL}/orders`, {
       headers: getHeaders(),
     });
     return handleResponse(response);
@@ -165,6 +165,20 @@ class ApiService {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ ...designData, image: imageUrl }),
+    });
+    return handleResponse(response);
+  }
+
+  // Designer Stats
+  async getDesignerStats(dateFrom?: string, dateTo?: string) {
+    let url = `${API_URL}/designer/stats`;
+    const params = new URLSearchParams();
+    if (dateFrom) params.append('dateFrom', dateFrom);
+    if (dateTo) params.append('dateTo', dateTo);
+    if (params.toString()) url += `?${params.toString()}`;
+
+    const response = await fetch(url, {
+      headers: getHeaders(),
     });
     return handleResponse(response);
   }

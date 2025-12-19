@@ -83,7 +83,7 @@ export const orders: Order[] = [
     customerName: 'Mike Davis',
     customerEmail: 'mike@example.com',
     productName: 'Minimalist Black',
-    designerName: 'Thread Studio',
+    designerName: 'ValorFit Studio',
     quantity: 3,
     price: 104.97,
     status: 'processing',

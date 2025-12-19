@@ -10,7 +10,7 @@ const NewsletterSection = () => {
     if (email) {
       toast({
         title: "You're in!",
-        description: "Welcome to the THREAD family. Stay tuned for exclusive drops.",
+        description: "Welcome to the ValorFit family. Stay tuned for exclusive drops.",
       });
       setEmail('');
     }
@@ -39,7 +39,7 @@ const NewsletterSection = () => {
             GET EARLY ACCESS
           </h2>
           <p className="text-muted-foreground text-lg mb-8">
-            Be the first to know about new drops, exclusive offers, and limited editions. 
+            Be the first to know about new drops, exclusive offers, and limited editions.
             No spam, just heat.
           </p>
 

@@ -1,8 +1,9 @@
-import { LayoutDashboard, Package, Palette, Users, LogOut, Menu, ShoppingBag } from 'lucide-react';
-import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Package, Palette, Users, LogOut, Menu, ShoppingBag, Store } from 'lucide-react';
+import { NavLink as RouterNavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
@@ -15,6 +16,13 @@ const menuItems = [
 export function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <>
@@ -70,16 +78,25 @@ export function AdminSidebar() {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-2">
             <RouterNavLink
               to="/"
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               )}
             >
-              <LogOut className="h-5 w-5 shrink-0" />
+              <Store className="h-5 w-5 shrink-0" />
               {!collapsed && <span>Back to Store</span>}
             </RouterNavLink>
+            <button
+              onClick={handleLogout}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors w-full"
+              )}
+            >
+              <LogOut className="h-5 w-5 shrink-0" />
+              {!collapsed && <span>Logout</span>}
+            </button>
           </div>
         </div>
       </aside>

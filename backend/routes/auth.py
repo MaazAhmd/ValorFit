@@ -48,7 +48,6 @@ def login():
     
     email = data.get('email')
     password = data.get('password')
-    role = data.get('role', 'customer')
     
     if not all([email, password]):
         return jsonify({'message': 'Email and password are required'}), 400
@@ -57,10 +56,6 @@ def login():
     
     if not user or not user.check_password(password):
         return jsonify({'message': 'Invalid email or password'}), 401
-    
-    # Check if user has the requested role (or is admin which can access everything)
-    if user.role != role and user.role != 'admin':
-        return jsonify({'message': f'This account is not registered as a {role}'}), 403
     
     token = create_access_token(identity=str(user.id))
     

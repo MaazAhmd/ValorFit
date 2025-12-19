@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Menu, X, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { ShoppingBag, Menu, X, User, LogOut, Package } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
@@ -18,12 +18,34 @@ const Header = () => {
   const { user, isAuthenticated, logout, isAdmin, isDesigner } = useAuth();
   const navigate = useNavigate();
 
-  const navLinks = [
-    { name: 'Shop All', href: '/shop' },
-    { name: 'Designer', href: '/shop?category=designer' },
-    { name: 'Virtual Try-On', href: '/virtual-try-on' },
-    { name: 'About', href: '/about' },
-  ];
+  // Different nav links based on user role
+  const getNavLinks = () => {
+    if (isAdmin) {
+      return [
+        { name: 'Dashboard', href: '/admin' },
+        { name: 'Products', href: '/admin/products' },
+        { name: 'Orders', href: '/admin/orders' },
+        { name: 'Designs', href: '/admin/designs' },
+        { name: 'Designers', href: '/admin/designers' },
+      ];
+    }
+    if (isDesigner) {
+      return [
+        { name: 'Dashboard', href: '/designer' },
+        { name: 'My Designs', href: '/designer/designs' },
+        { name: 'Wallet', href: '/designer/wallet' },
+      ];
+    }
+    // Customer/guest navigation
+    return [
+      { name: 'Shop All', href: '/shop' },
+      { name: 'Designer', href: '/shop?category=designer' },
+      { name: 'Virtual Try-On', href: '/virtual-try-on' },
+      { name: 'About', href: '/about' },
+    ];
+  };
+
+  const navLinks = getNavLinks();
 
   const handleLogout = () => {
     logout();
@@ -34,8 +56,10 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="font-display text-2xl tracking-wider text-foreground hover:text-primary transition-smooth">
-          THREAD<span className="text-primary">.</span>
+        <Link to={isAdmin ? '/admin' : isDesigner ? '/designer' : '/'} className="font-display text-2xl tracking-wider text-foreground hover:text-primary transition-smooth">
+          VALOR<span className="text-primary">FIT</span>
+          {isAdmin && <span className="text-xs text-muted-foreground ml-2 uppercase tracking-wider">Admin</span>}
+          {isDesigner && !isAdmin && <span className="text-xs text-muted-foreground ml-2 uppercase tracking-wider">Designer</span>}
         </Link>
 
         {/* Desktop Navigation */}
@@ -53,17 +77,19 @@ const Header = () => {
 
         {/* Cart, Auth & Mobile Menu */}
         <div className="flex items-center gap-2">
-          {/* Cart */}
-          <Link to="/cart" className="relative">
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingBag className="h-5 w-5" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Button>
-          </Link>
+          {/* Cart - only show for customers */}
+          {!isAdmin && !isDesigner && (
+            <Link to="/cart" className="relative">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingBag className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                    {totalItems}
+                  </span>
+                )}
+              </Button>
+            </Link>
+          )}
 
           {/* Auth */}
           {isAuthenticated && user ? (
@@ -80,19 +106,12 @@ const Header = () => {
                   <p className="text-xs text-primary capitalize">{user.role}</p>
                 </div>
                 <DropdownMenuSeparator />
-                {isAdmin && (
-                  <DropdownMenuItem onClick={() => navigate('/admin')}>
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Admin Dashboard
+                {!isAdmin && !isDesigner && (
+                  <DropdownMenuItem onClick={() => navigate('/orders')}>
+                    <Package className="h-4 w-4 mr-2" />
+                    My Orders
                   </DropdownMenuItem>
                 )}
-                {isDesigner && !isAdmin && (
-                  <DropdownMenuItem onClick={() => navigate('/designer')}>
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Designer Dashboard
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-500">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
@@ -141,22 +160,14 @@ const Header = () => {
                     <p className="text-sm font-medium">{user.name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
                   </div>
-                  {isAdmin && (
+                  {!isAdmin && !isDesigner && (
                     <Link
-                      to="/admin"
-                      className="block py-2 text-primary"
+                      to="/orders"
+                      className="flex items-center gap-2 py-2 text-foreground"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Admin Dashboard
-                    </Link>
-                  )}
-                  {isDesigner && !isAdmin && (
-                    <Link
-                      to="/designer"
-                      className="block py-2 text-primary"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Designer Dashboard
+                      <Package className="h-4 w-4" />
+                      My Orders
                     </Link>
                   )}
                   <button

@@ -23,18 +23,18 @@ const HeroSection = () => {
           <div className="space-y-8 animate-slide-up">
             <div className="space-y-4">
               <span className="inline-block text-primary uppercase tracking-[0.3em] text-sm font-medium">
-                New Collection 2024
+                Performance Collection 2024
               </span>
               <h1 className="font-display text-6xl md:text-8xl lg:text-9xl leading-none">
-                REDEFINE
+                PUSH YOUR
                 <br />
-                <span className="text-gradient">YOUR STYLE</span>
+                <span className="text-gradient">LIMITS</span>
               </h1>
             </div>
-            
+
             <p className="text-muted-foreground text-lg max-w-md leading-relaxed">
-              Premium streetwear crafted for those who dare to stand out. 
-              Limited editions, unlimited expression.
+              Premium gym and athletic apparel crafted for those who never quit.
+              Performance meets style, strength meets comfort.
             </p>
 
             <div className="flex flex-wrap gap-4">
@@ -72,9 +72,9 @@ const HeroSection = () => {
           <div className="relative hidden lg:block">
             <div className="relative z-10 animate-float">
               <img
-                src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=800&fit=crop"
-                alt="Featured T-Shirt"
-                className="w-full max-w-md mx-auto shadow-2xl"
+                src="/assets/hero/valorfit-hero.png"
+                alt="Premium Gym T-Shirt"
+                className="w-full max-w-md mx-auto shadow-2xl rounded-lg"
               />
             </div>
             {/* Decorative elements */}
