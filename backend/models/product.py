@@ -22,6 +22,7 @@ class Product(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     quantity = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_deleted = db.Column(db.Boolean, default=False)
     
     def to_dict(self):
         return {
@@ -41,4 +42,5 @@ class Product(db.Model):
             'isNew': self.is_new,
             'isActive': self.is_active,
             'quantity': self.quantity
+            ,'isDeleted': self.is_deleted
         }

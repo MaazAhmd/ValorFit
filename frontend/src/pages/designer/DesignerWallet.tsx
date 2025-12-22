@@ -71,7 +71,11 @@ export default function DesignerWallet() {
   }, []);
 
   const pendingEarnings = transactions
-    .filter(t => t.type === 'pending' && t.status === 'pending')
+    .filter(t => t.status === 'pending')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalEarnings = transactions
+    .filter(t => t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const handleWithdraw = async (e: React.FormEvent) => {
@@ -235,7 +239,7 @@ export default function DesignerWallet() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Earnings</p>
-                <p className="text-3xl font-bold text-green-500">${walletData.totalCommission.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-green-500">${totalEarnings.toFixed(2)}</p>
               </div>
               <div className="p-3 bg-green-500/20 rounded-full">
                 <DollarSign className="h-8 w-8 text-green-500" />

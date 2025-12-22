@@ -2,6 +2,7 @@ import json
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate
 from config import Config
 from models import db, bcrypt, User, Product
 
@@ -12,6 +13,8 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     bcrypt.init_app(app)
+    migrate = Migrate(app, db)
+
     JWTManager(app)
     CORS(app, resources={r"/api/*": {"origins": "*"}})
     

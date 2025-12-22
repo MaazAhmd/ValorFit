@@ -71,7 +71,7 @@ export function DesignerSidebar() {
           )}
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
+          <nav className="flex-1 p-2 space-y-2">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.url;
               return (
@@ -94,15 +94,6 @@ export function DesignerSidebar() {
 
           {/* Footer */}
           <div className="p-4 border-t border-border space-y-2">
-            <RouterNavLink
-              to="/"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              )}
-            >
-              <Store className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>Back to Store</span>}
-            </RouterNavLink>
             <button
               onClick={handleLogout}
               className={cn(

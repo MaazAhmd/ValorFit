@@ -74,7 +74,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md">
         {/* Header */}
         <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">ValorFit</h1>
+          <h1 className="text-3xl font-bold  t">ValorFit</h1>
           <p className="text-sm text-black/60 mt-2">
             {mode === "login" ? "Sign in to your account" : "Create a new account"}
           </p>

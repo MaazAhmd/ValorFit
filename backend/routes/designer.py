@@ -91,8 +91,8 @@ def get_designer_stats():
                         product_sales[item_product_id]['unitsSold'] += quantity
                         product_sales[item_product_id]['revenue'] += item_total
                         product_sales[item_product_id]['commission'] += item_total * 0.05
-                        
-                        total_sales += quantity
+                        if order.status == 'delivered':
+                            total_sales += quantity
                         total_revenue += item_total
         except (json.JSONDecodeError, TypeError):
             continue
@@ -176,6 +176,6 @@ def request_withdrawal():
 def get_my_designs():
     """Get designs for current designer."""
     user_id = get_jwt_identity()
-    designs = Design.query.filter_by(designer_id=user_id).order_by(Design.upload_date.desc()).all()
+    designs = Design.query.filter_by(designer_id=user_id, is_deleted=False).order_by(Design.upload_date.desc()).all()
     
     return jsonify({'designs': [d.to_dict() for d in designs]})

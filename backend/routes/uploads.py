@@ -4,126 +4,137 @@ Provides endpoints for uploading and serving product/design images.
 """
 import os
 import uuid
-from flask import Blueprint, request, jsonify, send_from_directory, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from werkzeug.utils import secure_filename
+from flask import Blueprint, request, jsonify, current_app, redirect
+from flask_jwt_extended import jwt_required
 from config import Config
+import boto3
+from botocore.config import Config as BotoConfig
 
 uploads_bp = Blueprint('uploads', __name__, url_prefix='/api/uploads')
+
+# Create S3-compatible client for Cloudflare R2
+s3_client = boto3.client(
+    's3',
+    endpoint_url=Config.R2_ENDPOINT,
+    aws_access_key_id=Config.R2_ACCESS_KEY_ID,
+    aws_secret_access_key=Config.R2_SECRET_ACCESS_KEY,
+    config=BotoConfig(signature_version='s3v4'),
+)
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def get_upload_folder():
-    """Get the upload folder path, create if doesn't exist."""
-    upload_folder = Config.UPLOAD_FOLDER
-    # Create subdirectories for different types
-    products_folder = os.path.join(upload_folder, 'products')
-    designs_folder = os.path.join(upload_folder, 'designs')
-    
-    os.makedirs(products_folder, exist_ok=True)
-    os.makedirs(designs_folder, exist_ok=True)
-    
-    return upload_folder
+
+def generate_presigned_get_url(bucket: str, key: str, expires: int = 3600) -> str:
+    """
+    Generate a presigned GET URL for a private R2 object.
+    """
+    return s3_client.generate_presigned_url(
+        'get_object',
+        Params={'Bucket': bucket, 'Key': key},
+        ExpiresIn=expires
+    )
+
+
+def upload_to_r2(bucket: str, key: str, file_stream, content_type: str) -> str:
+    """
+    Uploads file to R2 and returns a presigned GET URL.
+    """
+    try:
+        file_stream.seek(0)
+    except Exception:
+        pass
+
+    s3_client.put_object(
+        Bucket=bucket,
+        Key=key,
+        Body=file_stream.read(),
+        ContentType=content_type
+    )
+
+    # ALWAYS return presigned URL (bucket is private)
+    return generate_presigned_get_url(bucket, key)
+
 
 @uploads_bp.route('/product', methods=['POST'])
 @jwt_required()
 def upload_product_image():
-    """Upload a product image. Returns the local path to use."""
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
-    
+
     file = request.files['image']
-    
+
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
-    
+
     if not allowed_file(file.filename):
         return jsonify({'error': 'File type not allowed. Use: png, jpg, jpeg, gif, webp'}), 400
-    
+
     try:
-        upload_folder = get_upload_folder()
-        products_folder = os.path.join(upload_folder, 'products')
-        
-        # Generate unique filename
         ext = file.filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{uuid.uuid4()}.{ext}"
-        filepath = os.path.join(products_folder, unique_filename)
-        
-        # Save the file
-        file.save(filepath)
-        
-        # Return the URL path that can be used to access this image
-        image_url = f"/api/uploads/products/{unique_filename}"
-        
+        key = f"products/{unique_filename}"
+        content_type = file.mimetype or f"image/{ext}"
+
+        image_url = upload_to_r2(Config.R2_BUCKET, key, file.stream, content_type)
+
         return jsonify({
             'success': True,
-            'image_url': image_url,
+            'image_url': image_url,   # presigned URL
             'filename': unique_filename
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @uploads_bp.route('/design', methods=['POST'])
 @jwt_required()
 def upload_design_image():
-    """Upload a design image. Returns the local path to use."""
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
-    
+
     file = request.files['image']
-    
+
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
-    
+
     if not allowed_file(file.filename):
         return jsonify({'error': 'File type not allowed. Use: png, jpg, jpeg, gif, webp'}), 400
-    
+
     try:
-        upload_folder = get_upload_folder()
-        designs_folder = os.path.join(upload_folder, 'designs')
-        
-        # Generate unique filename
         ext = file.filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{uuid.uuid4()}.{ext}"
-        filepath = os.path.join(designs_folder, unique_filename)
-        
-        # Save the file
-        file.save(filepath)
-        
-        # Return the URL path that can be used to access this image
-        image_url = f"/api/uploads/designs/{unique_filename}"
-        
+        key = f"designs/{unique_filename}"
+        content_type = file.mimetype or f"image/{ext}"
+
+        image_url = upload_to_r2(Config.R2_BUCKET, key, file.stream, content_type)
+
         return jsonify({
             'success': True,
-            'image_url': image_url,
+            'image_url': image_url,   # presigned URL
             'filename': unique_filename
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @uploads_bp.route('/products/<filename>', methods=['GET'])
 def serve_product_image(filename):
-    """Serve a product image from local storage."""
-    try:
-        upload_folder = get_upload_folder()
-        products_folder = os.path.join(upload_folder, 'products')
-        return send_from_directory(products_folder, filename)
-    except Exception as e:
-        return jsonify({'error': 'Image not found'}), 404
+    """
+    Redirect to a presigned URL (keeps bucket private).
+    """
+    key = f"products/{filename}"
+    url = generate_presigned_get_url(Config.R2_BUCKET, key)
+    return redirect(url, code=302)
+
 
 @uploads_bp.route('/designs/<filename>', methods=['GET'])
 def serve_design_image(filename):
-    """Serve a design image from local storage."""
-    try:
-        upload_folder = get_upload_folder()
-        designs_folder = os.path.join(upload_folder, 'designs')
-        return send_from_directory(designs_folder, filename)
-    except Exception as e:
-        return jsonify({'error': 'Image not found'}), 404
+    key = f"designs/{filename}"
+    url = generate_presigned_get_url(Config.R2_BUCKET, key)
+    return redirect(url, code=302)

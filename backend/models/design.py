@@ -17,6 +17,7 @@ class Design(db.Model):
     price = db.Column(db.Float, default=29.99)  # Designer sets the price
     description = db.Column(db.Text, nullable=True)  # Optional description
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)  # Link to created product
+    is_deleted = db.Column(db.Boolean, default=False)
     
     def to_dict(self):
         return {
@@ -35,4 +36,5 @@ class Design(db.Model):
             'price': self.price,
             'description': self.description,
             'productId': self.product_id
+            ,'isDeleted': self.is_deleted
         }

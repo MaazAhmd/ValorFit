@@ -16,10 +16,11 @@ def get_designs():
     if not user:
         return jsonify({'message': 'User not found'}), 404
     
+    # Only return non-deleted designs
     if user.role == 'admin':
-        designs = Design.query.all()
+        designs = Design.query.filter_by(is_deleted=False).all()
     else:
-        designs = Design.query.filter_by(designer_id=user_id).all()
+        designs = Design.query.filter_by(designer_id=user_id, is_deleted=False).all()
     
     return jsonify({'designs': [d.to_dict() for d in designs]})
 
@@ -129,27 +130,22 @@ def reject_design(design_id):
 @designs_bp.route('/<int:design_id>', methods=['DELETE'])
 @jwt_required()
 def delete_design(design_id):
-    """Delete a design and its associated product (owner or admin only)."""
+    """Soft-delete a design (owner or admin only). Marks `is_deleted=True` and keeps product and orders intact."""
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     design = Design.query.get(design_id)
-    
+
     if not design:
         return jsonify({'message': 'Design not found'}), 404
-    
+
     if design.designer_id != user_id and user.role != 'admin':
         return jsonify({'message': 'Access denied'}), 403
-    
-    # Also delete associated product if exists
-    if design.product_id:
-        product = Product.query.get(design.product_id)
-        if product:
-            db.session.delete(product)
-    
-    db.session.delete(design)
+
+    # Soft-delete: mark the design as deleted so historical orders remain valid
+    design.is_deleted = True
     db.session.commit()
-    
-    return jsonify({'message': 'Design deleted successfully'})
+
+    return jsonify({'message': 'Design deleted (soft) successfully'})
 
 @designs_bp.route('/<int:design_id>', methods=['PUT'])
 @jwt_required()

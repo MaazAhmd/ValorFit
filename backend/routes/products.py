@@ -10,7 +10,8 @@ def get_products():
     """Get all active products."""
     category = request.args.get('category')
     
-    query = Product.query.filter_by(is_active=True)
+    # Only return non-deleted, active products
+    query = Product.query.filter_by(is_active=True, is_deleted=False)
     
     if category:
         query = query.filter_by(category=category)
@@ -31,13 +32,13 @@ def get_product(product_id):
 @products_bp.route('/featured', methods=['GET'])
 def get_featured_products():
     """Get featured products."""
-    products = Product.query.filter_by(is_active=True, is_featured=True).all()
+    products = Product.query.filter_by(is_active=True, is_featured=True, is_deleted=False).all()
     return jsonify({'products': [p.to_dict() for p in products]})
 
 @products_bp.route('/new', methods=['GET'])
 def get_new_arrivals():
     """Get new arrival products."""
-    products = Product.query.filter_by(is_active=True, is_new=True).all()
+    products = Product.query.filter_by(is_active=True, is_new=True, is_deleted=False).all()
     return jsonify({'products': [p.to_dict() for p in products]})
 
 @products_bp.route('', methods=['POST'])
@@ -123,8 +124,8 @@ def delete_product(product_id):
     
     if not product:
         return jsonify({'error': 'Product not found'}), 404
-    
-    db.session.delete(product)
+    # Soft-delete the product to preserve historical orders
+    product.is_deleted = True
     db.session.commit()
-    
-    return jsonify({'message': 'Product deleted successfully'})
+
+    return jsonify({'message': 'Product soft-deleted successfully'})

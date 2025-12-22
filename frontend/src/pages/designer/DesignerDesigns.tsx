@@ -52,6 +52,7 @@ export default function DesignerDesigns() {
       setLoading(true);
       const response = await apiService.getDesigns();
       setDesigns(response.designs || []);
+      console.log('Loaded designs:', response.designs);
     } catch (error: any) {
       console.error('Failed to load designs:', error);
       toast.error('Failed to load designs');
@@ -154,7 +155,7 @@ export default function DesignerDesigns() {
               Upload New Design
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Submit New Design</DialogTitle>
             </DialogHeader>
@@ -326,14 +327,14 @@ export default function DesignerDesigns() {
                   alt={design.name}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                {/* <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button size="icon" variant="secondary">
                     <Eye className="h-4 w-4" />
                   </Button>
                   <Button size="icon" variant="secondary">
                     <Edit className="h-4 w-4" />
                   </Button>
-                </div>
+                </div> */}
                 <span className={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full ${getStatusColor(design.status)}`}>
                   {design.status}
                 </span>
@@ -355,7 +356,7 @@ export default function DesignerDesigns() {
                     </div>
                     <div className="flex justify-between text-sm mt-1">
                       <span className="text-muted-foreground">Your Earnings (5%)</span>
-                      <span className="font-medium text-accent">${((design.revenue || 0) * 0.05).toFixed(2)}</span>
+                      <span className="font-medium text-accent">${((design.sales * design.price || 0) * 0.05).toFixed(2)}</span>
                     </div>
                   </div>
                 )}

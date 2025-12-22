@@ -354,17 +354,20 @@ export default function AdminDashboard() {
                       label={({ name, value }) => `${name}: ${value}`}
                     >
                       {statusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                      backgroundColor: '#ffffff',
+                      color: '#111827',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
                       }}
+                      labelStyle={{ color: '#111827' }}
+                      itemStyle={{ color: '#111827' }}
                     />
-                  </PieChart>
+                    </PieChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
