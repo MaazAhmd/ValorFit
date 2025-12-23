@@ -30,7 +30,7 @@ def create_tryon():
         user_photo = user_photo_file.read()
         product_image = product_image_file.read()
         
-        # Generate try-on image using Gemini
+        # Generate try-on image using FASHN API
         result_image = asyncio.run(generate_tryon(user_photo, product_image, product_name))
         
         # Upload result to storage

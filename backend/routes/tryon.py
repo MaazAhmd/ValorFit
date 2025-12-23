@@ -60,7 +60,7 @@ def create_tryon():
             with open(product.image, 'rb') as f:
                 product_image_data = f.read()
         
-        # Generate try-on using Gemini (same as Java snippet)
+        # Generate try-on using FASHN API
         tryon_image_data = generate_tryon(
             user_photo=user_photo_data,
             product_image=product_image_data,

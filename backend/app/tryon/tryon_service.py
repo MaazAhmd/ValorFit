@@ -1,14 +1,16 @@
 import base64
 import io
-from PIL import Image
-import google.genai as genai
-from google.genai import types
 import os
+import time
 import traceback
+import requests
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY not set in .env")
+FASHN_API_KEY = os.getenv("FASHN_API_KEY")
+if not FASHN_API_KEY:
+    raise RuntimeError("FASHN_API_KEY not set in .env")
+
+FASHN_API_BASE = "https://api.fashn.ai/v1"
+
 
 def base64_to_image(base64_str: str) -> bytes:
     """Convert base64 string to image bytes."""
@@ -20,44 +22,93 @@ def image_to_base64(image_data: bytes) -> str:
 
 async def generate_tryon(user_photo: bytes, product_image: bytes, product_name: str) -> bytes:
     """
-    Use Gemini 2.5 Flash to composite user photo with t-shirt.
+    Use FASHN Virtual Try-On v1.6 API to generate realistic try-on image.
     Returns resulting image as bytes.
     """
     try:
-        # Create Gemini client
-        client = genai.Client()
+        # Convert bytes to base64 with proper prefix
+        user_photo_base64 = f"data:image/jpeg;base64,{image_to_base64(user_photo)}"
+        product_image_base64 = f"data:image/jpeg;base64,{image_to_base64(product_image)}"
         
-        # Convert bytes to PIL Images
-        user_pil = Image.open(io.BytesIO(user_photo))
-        product_pil = Image.open(io.BytesIO(product_image))
+        # Submit try-on request
+        headers = {
+            "Authorization": f"Bearer {FASHN_API_KEY}",
+            "Content-Type": "application/json"
+        }
         
-        # Prepare prompt
-        prompt = f"""Create a professional e-commerce try-on photo.
+        payload = {
+            "model_name": "tryon-v1.6",
+            "inputs": {
+                "model_image": user_photo_base64,
+                "garment_image": product_image_base64,
+                "category": "auto",
+                "mode": "balanced",
+                "output_format": "png"
+            }
+        }
         
-Take the t-shirt from the first image and place it on the person in the second image.
-Generate a realistic, full-body or upper-body shot of the person wearing the {product_name}.
-Adjust lighting and shadows to match the original environment.
-Keep the person's face and body proportions natural.
-Make the t-shirt fit naturally on their body.
-
-Return ONLY the composite image without any text or watermarks."""
-
-        # Call Gemini with images using the correct format
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-image",
-            contents=[product_pil, user_pil, prompt]
+        # Submit request
+        print("Submitting try-on request to FASHN API...")
+        response = requests.post(
+            f"{FASHN_API_BASE}/run",
+            headers=headers,
+            json=payload
         )
-
-        # Extract image from response
-        print(f"Response parts: {len(response.parts)}")
-        for part in response.parts:
-            print(f"Part: {part}")
-            if part.inline_data is not None:
-                return part.inline_data.data
         
-        raise Exception("No image in Gemini response")
+        if response.status_code != 200:
+            raise Exception(f"FASHN API request failed: {response.status_code} - {response.text}")
+        
+        result = response.json()
+        prediction_id = result.get("id")
+        
+        if not prediction_id:
+            raise Exception(f"No prediction ID returned: {result}")
+        
+        print(f"Prediction ID: {prediction_id}")
+        
+        # Poll for completion
+        status_url = f"{FASHN_API_BASE}/status/{prediction_id}"
+        max_attempts = 60  # 60 attempts * 2 seconds = 2 minutes max
+        attempt = 0
+        
+        while attempt < max_attempts:
+            time.sleep(2)  # Wait 2 seconds between polls
+            attempt += 1
+            
+            status_response = requests.get(status_url, headers=headers)
+            
+            if status_response.status_code != 200:
+                raise Exception(f"Status check failed: {status_response.status_code}")
+            
+            status_result = status_response.json()
+            status = status_result.get("status")
+            
+            print(f"Attempt {attempt}: Status = {status}")
+            
+            if status == "completed":
+                output = status_result.get("output")
+                if not output or len(output) == 0:
+                    raise Exception("No output image URL returned")
+                
+                # Download the result image
+                image_url = output[0]
+                print(f"Downloading result from: {image_url}")
+                
+                image_response = requests.get(image_url)
+                if image_response.status_code != 200:
+                    raise Exception(f"Failed to download result image: {image_response.status_code}")
+                
+                return image_response.content
+            
+            elif status == "failed":
+                error = status_result.get("error", "Unknown error")
+                raise Exception(f"FASHN try-on failed: {error}")
+            
+            # Status is still "processing" or "queued", continue polling
+        
+        raise Exception("Try-on timed out after 2 minutes")
     
     except Exception as e:
         print(f"ERROR in generate_tryon: {str(e)}")
         traceback.print_exc()
-        raise Exception(f"Gemini try-on failed: {str(e)}")
+        raise Exception(f"FASHN try-on failed: {str(e)}")

@@ -15,7 +15,7 @@ class Config:
     JWT_TOKEN_LOCATION = ['headers']
     JWT_HEADER_NAME = 'Authorization'
     JWT_HEADER_TYPE = 'Bearer'
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    FASHN_API_KEY = os.getenv("FASHN_API_KEY")
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB max
     R2_ENDPOINT = os.getenv("R2_ENDPOINT")

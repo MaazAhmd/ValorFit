@@ -161,7 +161,7 @@ const VirtualTryOnPage = () => {
                         <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-4">
                           <RefreshCw className="w-12 h-12 text-primary animate-spin" />
                           <p className="text-foreground font-medium">Processing your image...</p>
-                          <p className="text-sm text-muted-foreground">Gemini AI is working its magic</p>
+                          <p className="text-sm text-muted-foreground">This may take a few moments</p>
                         </div>
                       )}
 
@@ -210,7 +210,7 @@ const VirtualTryOnPage = () => {
                   disabled={!selectedImagePreview || !selectedProduct || isProcessing}
                   onClick={handleTryOn}
                 >
-                  {isProcessing ? 'Processing with Gemini AI...' : 'Try On Selected Tee'}
+                  {isProcessing ? 'Processing...' : 'Try On Selected Tee'}
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
