@@ -1,6 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+import { API_BASE } from "@/config/api";
 
 export type LoginPayload = { email: string; password: string; role?: string };
 export type RegisterPayload = { name?: string; email: string; password: string; role?: "customer" | "designer" | "admin" };

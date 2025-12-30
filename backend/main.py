@@ -232,8 +232,9 @@ def seed_database():
     print("Customer: john@customer.com / customer123")
 
 
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
-    print("\nFlask backend running on http://localhost:5000")
+    print("\nFlask backend running on http://localhost:5001")
     print("=" * 50)
     app.run(debug=True, port=5001)

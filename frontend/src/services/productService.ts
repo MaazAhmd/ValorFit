@@ -1,24 +1,13 @@
 import { authFetch } from "./authService";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
-
-export type Product = {
-  id: string;
-  title: string;
-  description?: string;
-  price: string | number;
-  image_url?: string;
-  category?: string;
-  owner?: string;
-  created_at?: string;
-};
+import { Product } from "@/context/CartContext";
+import { API_BASE } from "@/config/api";
 
 export async function getProducts(): Promise<Product[]> {
   try {
     const res = await fetch(`${API_BASE}/api/products/`);
     if (!res.ok) throw new Error("backend fetch failed");
     const data = await res.json();
-    return data.map((p: any) => ({ ...p, price: Number(p.price) }));
+    return data.products || [];
   } catch (e) {
     console.warn("getProducts failed:", e);
     return [];
@@ -29,8 +18,8 @@ export async function getProduct(id: string): Promise<Product | null> {
   try {
     const res = await fetch(`${API_BASE}/api/products/${id}`);
     if (!res.ok) throw new Error("not found");
-    const p = await res.json();
-    return { ...p, price: Number(p.price) };
+    const data = await res.json();
+    return data.product || null;
   } catch (e) {
     console.warn("getProduct failed:", e);
     return null;
@@ -61,4 +50,16 @@ export async function deleteProduct(id: string) {
   });
   if (!res.ok) throw new Error("Failed to delete product");
   return res.json();
+}
+
+export async function getFeaturedProducts(): Promise<Product[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/products/featured`);
+    if (!res.ok) throw new Error("backend fetch failed");
+    const data = await res.json();
+    return data.products || [];
+  } catch (e) {
+    console.warn("getFeaturedProducts failed:", e);
+    return [];
+  }
 }

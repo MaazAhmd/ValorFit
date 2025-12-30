@@ -1,6 +1,5 @@
 import { authFetch, getToken } from "./authService";
-
-const API_BASE = "/api";
+import { API_BASE } from "@/config/api";
 
 export type TryOnResponse = {
   image_url?: string;
@@ -20,7 +19,7 @@ export async function generateTryOn(
   formData.append("user_photo", userPhotoFile);
   formData.append("product_id", productId);
 
-  const res = await fetch(`${API_BASE}/tryon/generate`, {
+  const res = await fetch(`${API_BASE}/api/tryon/generate`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -35,13 +34,13 @@ export async function generateTryOn(
 }
 
 export async function getTryOnHistory() {
-  const res = await authFetch(`${API_BASE}/tryon/history`);
+  const res = await authFetch(`${API_BASE}/api/tryon/history`);
   if (!res.ok) throw new Error("Failed to fetch history");
   return res.json();
 }
 
 export async function deleteTryOn(tryOnId: number) {
-  const res = await authFetch(`${API_BASE}/tryon/${tryOnId}`, {
+  const res = await authFetch(`${API_BASE}/api/tryon/${tryOnId}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Delete failed");

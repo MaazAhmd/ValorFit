@@ -1,11 +1,28 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { getFeaturedProducts } from '@/data/products';
+import { getFeaturedProducts } from '@/services/productService';
 import ProductCard from '@/components/product/ProductCard';
 import { Button } from '@/components/ui/button';
+import { Product } from '@/context/CartContext';
 
 const FeaturedProducts = () => {
-  const featured = getFeaturedProducts().slice(0, 4);
+  const [featured, setFeatured] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const products = await getFeaturedProducts();
+        setFeatured(products.slice(0, 4));
+      } catch (error) {
+        console.error('Failed to fetch featured products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeatured();
+  }, []);
 
   return (
     <section className="py-24 bg-card">
@@ -27,20 +44,36 @@ const FeaturedProducts = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featured.map((product, index) => (
-            <div
-              key={product.id}
-              className="animate-slide-up"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <ProductCard product={product} />
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div
+                key={index}
+                className="animate-pulse bg-muted aspect-[3/4] rounded-lg"
+              />
+            ))}
+          </div>
+        ) : featured.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            No featured products available at the moment.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featured.map((product, index) => (
+              <div
+                key={product.id}
+                className="animate-slide-up"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 };
 
 export default FeaturedProducts;
+
