@@ -15,6 +15,8 @@ import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
+import CustomDesignPage from "./pages/CustomDesignPage";
+import MyCustomDesigns from "./pages/MyCustomDesigns";
 import NotFound from "./pages/NotFound";
 
 // Auth pages
@@ -137,6 +139,12 @@ const AppRoutes = () => (
     <Route path="/orders" element={
       <ProtectedRoute allowedRoles={['customer']}>
         <MyOrdersPage />
+      </ProtectedRoute>
+    } />
+    <Route path="/custom-design" element={<CustomerOnlyRoute><CustomDesignPage /></CustomerOnlyRoute>} />
+    <Route path="/my-designs" element={
+      <ProtectedRoute allowedRoles={['customer']}>
+        <MyCustomDesigns />
       </ProtectedRoute>
     } />
 

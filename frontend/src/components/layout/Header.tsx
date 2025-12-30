@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Menu, X, User, LogOut, Package } from 'lucide-react';
+import { ShoppingBag, Menu, X, User, LogOut, Package, Palette } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
@@ -40,6 +40,7 @@ const Header = () => {
     return [
       { name: 'Shop All', href: '/shop' },
       { name: 'Designer', href: '/shop?category=designer' },
+      { name: 'Design Your Own', href: '/custom-design' },
       { name: 'Virtual Try-On', href: '/virtual-try-on' },
       { name: 'About', href: '/about' },
     ];
@@ -107,10 +108,16 @@ const Header = () => {
                 </div>
                 <DropdownMenuSeparator />
                 {!isAdmin && !isDesigner && (
-                  <DropdownMenuItem onClick={() => navigate('/orders')}>
-                    <Package className="h-4 w-4 mr-2" />
-                    My Orders
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={() => navigate('/orders')}>
+                      <Package className="h-4 w-4 mr-2" />
+                      My Orders
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/my-designs')}>
+                      <Palette className="h-4 w-4 mr-2" />
+                      My Designs
+                    </DropdownMenuItem>
+                  </>
                 )}
                 <DropdownMenuItem onClick={handleLogout} className="text-red-500">
                   <LogOut className="h-4 w-4 mr-2" />

@@ -133,7 +133,7 @@ export default function RegisterPage() {
                     }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  Shop T-Shirts
+                  Shop Compression Shirts
                 </button>
                 <button
                   type="button"

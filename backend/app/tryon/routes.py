@@ -23,7 +23,7 @@ def create_tryon():
     
     user_photo_file = request.files["user_photo"]
     product_image_file = request.files["product_image"]
-    product_name = request.form.get("product_name", "t-shirt")
+    product_name = request.form.get("product_name", "compression shirt")
     
     try:
         # Read image bytes

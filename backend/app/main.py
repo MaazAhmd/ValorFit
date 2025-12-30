@@ -26,7 +26,7 @@ def create_app():
     # simple health / root route
     @app.route("/", methods=["GET"])
     def index():
-        return {"status": "ok", "service": "T-Shirt Studio backend"}
+        return {"status": "ok", "service": "Compression Shirt Studio backend"}
 
     return app
 

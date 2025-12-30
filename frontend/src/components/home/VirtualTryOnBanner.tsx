@@ -27,7 +27,7 @@ const VirtualTryOnBanner = () => {
             </h2>
 
             <p className="text-muted-foreground text-lg max-w-md leading-relaxed">
-              See how our tees look on you before buying. 
+              See how our tees look on you before buying.
               Upload your photo and experience the future of online shopping.
             </p>
 
@@ -71,7 +71,7 @@ const VirtualTryOnBanner = () => {
                     alt="Virtual Try-On Demo"
                     className="w-full h-full object-cover"
                   />
-                  {/* Overlay T-shirt indicator */}
+                  {/* Overlay Compression shirt indicator */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="bg-background/80 backdrop-blur-sm px-6 py-3 border border-primary/50">
                       <span className="text-primary font-display text-lg">MIDNIGHT ESSENCE</span>
@@ -79,7 +79,7 @@ const VirtualTryOnBanner = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Floating elements */}
               <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full blur-xl animate-float" />
               <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '1s' }} />

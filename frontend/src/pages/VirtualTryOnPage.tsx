@@ -217,7 +217,7 @@ const VirtualTryOnPage = () => {
 
               {/* Right: Product Selection */}
               <div className="space-y-6">
-                <h2 className="font-display text-3xl">2. SELECT A T-SHIRT</h2>
+                <h2 className="font-display text-3xl">2. SELECT A COMPRESSION SHIRT</h2>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto pr-2">
                   {products.map((product) => (

@@ -27,6 +27,7 @@ def create_app():
     from routes.designer import designer_bp
     from routes.tryon import tryon_bp
     from routes.uploads import uploads_bp
+    from routes.custom_designs import custom_designs_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(products_bp)
@@ -36,6 +37,7 @@ def create_app():
     app.register_blueprint(designer_bp)
     app.register_blueprint(tryon_bp)
     app.register_blueprint(uploads_bp)
+    app.register_blueprint(custom_designs_bp)
     
     # with app.app_context():
     #     print("Dropping all tables...")
@@ -191,6 +193,18 @@ def seed_database():
             'image': 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&h=800&fit=crop',
             'description': 'Where dreams meet fabric. A designer masterpiece.',
             'is_featured': True
+        },
+        # Custom Compression Shirt - Base product for customer customization
+        {
+            'name': 'Custom Compression Shirt',
+            'price': 35,
+            'category': 'custom',
+            'sizes': ['S', 'M', 'L', 'XL', 'XXL'],
+            'colors': [{'name': 'White', 'hex': '#ffffff'}],
+            'image': 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=800&fit=crop',
+            'description': 'Design your own custom compression shirt! Upload your artwork or use our design tools.',
+            'is_featured': True,
+            'quantity': 999999
         }
     ]
     
@@ -222,4 +236,4 @@ if __name__ == '__main__':
     app = create_app()
     print("\nFlask backend running on http://localhost:5000")
     print("=" * 50)
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

@@ -10,3 +10,4 @@ from .design import Design
 from .order import Order
 from .transaction import Transaction
 from .tryon import TryOn
+from .custom_design import CustomDesign

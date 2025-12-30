@@ -30,7 +30,7 @@ const Footer = () => {
             <h4 className="font-display text-lg tracking-wider">SHOP</h4>
             <div className="space-y-2">
               <Link to="/shop" className="block text-sm text-muted-foreground hover:text-foreground transition-smooth">
-                All T-Shirts
+                All Compression Shirts
               </Link>
               <Link to="/shop?category=normal" className="block text-sm text-muted-foreground hover:text-foreground transition-smooth">
                 Classic Collection

@@ -265,6 +265,52 @@ class ApiService {
     });
     return handleResponse(response);
   }
+
+  // Custom Designs
+  async getCustomDesigns() {
+    const response = await fetch(`${API_URL}/custom-designs`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  }
+
+  async getCustomDesign(id: number) {
+    const response = await fetch(`${API_URL}/custom-designs/${id}`, {
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  }
+
+  async createCustomDesign(data: { name: string; frontDesign: any[]; backDesign: any[]; previewFront?: string; previewBack?: string }) {
+    const response = await fetch(`${API_URL}/custom-designs`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  }
+
+  async updateCustomDesign(id: number, data: { name?: string; frontDesign?: any[]; backDesign?: any[]; previewFront?: string; previewBack?: string }) {
+    const response = await fetch(`${API_URL}/custom-designs/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  }
+
+  async deleteCustomDesign(id: number) {
+    const response = await fetch(`${API_URL}/custom-designs/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  }
+
+  async getCustomTshirtProduct() {
+    const response = await fetch(`${API_URL}/custom-designs/base-product`);
+    return handleResponse(response);
+  }
 }
 
 export const apiService = new ApiService();

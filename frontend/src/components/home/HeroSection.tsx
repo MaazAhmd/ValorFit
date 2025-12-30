@@ -73,7 +73,7 @@ const HeroSection = () => {
             <div className="relative z-10 animate-float">
               <img
                 src="/assets/hero/valorfit-hero.png"
-                alt="Premium Gym T-Shirt"
+                alt="Premium Gym Compression Shirt"
                 className="w-full max-w-md mx-auto shadow-2xl rounded-lg"
               />
             </div>
